@@ -1,13 +1,13 @@
 name: modules
-title: Default Title
-version: master
+title: ETX Agentic AI
+version: main
 nav:
   - modules/ROOT/nav.adoc
 
 asciidoc:
   attributes:
     lab_name: "I'm the lab_name var"
-    release-version: master
+    release-version: main
     page-pagination: true
     my_var: "foo"
     guid: my-guid
