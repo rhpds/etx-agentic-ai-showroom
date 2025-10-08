@@ -13,7 +13,7 @@ Estimated time: 60–90 minutes
 == What you'll do
 
 * Verify cluster access and bootstrap GitOps
-* Initialize Vault and hydrate secrets
+* +++<del>Initialize Vault and hydrate secrets</del>+++
 * Fork the repo, set PATs and webhooks
 * Ensure Console Links and core apps are healthy
 
@@ -26,7 +26,7 @@ Before starting this lab, ensure you have the following:
 * **GitHub Account**: You'll need access to fork repositories and collaborate
 * **Git CLI**: Installed and configured on your local machine
 * **OpenShift CLI (oc)**: Download from https://mirror.openshift.com/pub/openshift-v4/clients/ocp/[OpenShift client downloads,window=_blank]
-* **HashiCorp Vault CLI**: Download from https://developer.hashicorp.com/vault/install[Vault installation guide,window=_blank]
+* +++<del>**HashiCorp Vault CLI**: Download from https://developer.hashicorp.com/vault/install[Vault installation guide,window=_blank]</del>+++
 * **jq**: Command-line JSON processor for parsing command outputs
 * **Python 3**: Provides `json.tool` for pretty-printing JSON
 * **envsubst (gettext)**: For environment variable substitution in manifests
@@ -40,7 +40,7 @@ Before starting this lab, ensure you have the following:
 * **Container Concepts**: Understanding of containers and Kubernetes/OpenShift (helpful but not required)
 
 === Provided by Instructors
-* **OpenShift Cluster Access**: GPU-enabled cluster with admin credentials
+* **OpenShift Cluster Access**: +++<del>GPU-enabled cluster</del>+++ with admin credentials
 * **Red Hat MaaS Access**: Model-as-a-Service credentials for LLaMA models
 * **Workshop Materials**: All necessary configuration files and scripts
 * **Environment Variables**: Cluster-specific configuration values
@@ -51,7 +51,7 @@ Before starting this lab, ensure you have the following:
 Before diving into the agentic AI lab, we need to set up our development environment. This involves two key steps:
 
 1. **Setting up GitOps**: Configure automated deployment pipelines that manage our infrastructure and applications
-2. **Configuring Secret Management**: Set up secure handling of API keys and credentials using HashiCorp Vault
+2. **Configuring Secret Management**: Set up secure handling of API keys and credentials +++<del>using HashiCorp Vault</del>+++
 
 **Why this matters**: This approach keeps sensitive information (like API keys) separate from our code, following security best practices while enabling automated deployments.
 
@@ -90,35 +90,20 @@ TIP: Covered in a Quick Start
 
 . Done ✅
 
-== Team Setup
+== Initial Setup
 
-. **You'll likely either be working in teams of 2 people per cluster or groups of 2 where each person gets their own cluster (if resources are available)**
-+
-[NOTE]
-====
-**Why teams of two?**
-
-* **Resource optimization**: GPU-enabled OpenShift clusters are expensive - sharing clusters allows us to provide everyone with powerful hardware
-* **Better learning**: https://openpracticelibrary.com/practice/pair-programming/[Pair programming,window=_blank] increases knowledge sharing and helps troubleshoot issues faster
-* **Real-world practice**: Most production AI/ML teams work collaboratively on shared infrastructure and have a mixture of roles and expertise
-
-This setup mirrors how teams work with shared cloud resources in enterprise environments.
-====
 
 . **Receive your cluster credentials** 🔐
 +
-Your instructor will provide OpenShift login credentials for your team's shared cluster.
+Your instructor will provide OpenShift login credentials for your cluster.
 
-. **Set up your shared repository** (choose one team member to do this):
+. **Set up your shared repository**:
 .. https://github.com/redhat-ai-services/etx-agentic-ai[Fork the etx-agentic-ai repository,window=_blank] to your personal GitHub account
 +
 .GitHub Repo Fork
 image::github-fork.png[GitHub Repo Fork, 400]
-.. Add your teammate as a collaborator with write access
 +
-.GitHub Repo Collaborators  
-image::github-collaborators.png[GitHub Repo Collaborators, 400]
-+
+
 .. Ensure that you **Enable Issues** for your fork under **Settings** > **General** > **Features** > **Issues** as they are disabled for forked repos by default
 +
 .GitHub Repo Enable Issues
@@ -126,7 +111,7 @@ image::github-repo-enable-issues.png[GitHub Repo Enable Issues, 400]
 
 . **Setup and run the Web Terminal Operator as described in the Quick Starts**
 
-. **Both team members: Later in the lab we will clone the forked repository to the OpenShift Web Terminal through steps in the Quick Starts, but if you're running the lab locally you can go ahead and clone the repository locally to your laptop.**
+. **Later in the lab we will clone the forked repository to the OpenShift Web Terminal through steps in the Quick Starts, but if you're running the lab locally you can go ahead and clone the repository locally to your laptop.**
 +
 [source,bash,options="wrap",role="execute"]
 ----
@@ -146,21 +131,20 @@ Replace `your-gh-user` with the actual GitHub username of whoever forked the rep
 +
 You should now have:
 +
-* Access to your team's OpenShift cluster
-* A shared fork of the repository with both teammates as collaborators  
-* Local copies of the code on both laptops
+* Access to your OpenShift cluster
+* A fork of the repository
+* Local copies of the code
 
 == Cluster Environment
 
-Your team has access to a fully-featured OpenShift cluster designed for AI workloads. This cluster mimics many customer production environments. Here's how the platform is architected:
+You have now access to a fully-featured OpenShift cluster designed for AI workloads. This cluster mimics many customer production environments. Here's how the platform is architected:
 
 === Bootstrap Components
 These foundational components are deployed first to establish the platform's operational baseline:
 
 * **Red Hat OpenShift**: Enterprise Kubernetes platform providing container orchestration
-* **Advanced Cluster Management (ACM)**: Multi-cluster governance and GitOps orchestration
 * **Argo CD**: Declarative, Git-driven application deployments
-* **HashiCorp Vault**: Secure credential storage and automated secret injection
+* **OpenShift Secrets**: Secure credential storage and automated secret injection
 
 === Security, Governance, and Delivery (Argo CD + Policy as Code)
 Built on the bootstrap foundation, we combine continuous delivery with continuous compliance:
