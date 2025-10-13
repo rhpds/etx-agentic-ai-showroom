@@ -7,7 +7,7 @@ Persona: Platform Engineer (primary). Also relevant: AI Engineer.
 
 [NOTE]
 ====
-Estimated time: 60–90 minutes
+Estimated time: 30 minutes
 ====
 
 == What you'll do
@@ -699,103 +699,6 @@ image::bootstrap-begin.png[bootstrap-begin, 400]
 image::bootstrap-complete.png[bootstrap-complete, 400]
 +
 Also, notice that the `tenant-ai-agent-local-cluster` app is constantly in a progressing state. This is something we will address later in this course.
-
-. Done ✅
-
-== Our Data Science Team Have A Request
-
-It seems there is only limited GPUs in the cluster. In this example **1** GPU. We already have an LLM Model deployed at bootstrap time using this GPU.
-
-The Data Science team 🤓 have requested to use GPUs for their Data Science Workbenches e.g. when they use a Pytorch, CUDA or other stack image that can directly access an accelerator.
-
-Given the cluster already has access to one GPU node let's quickly set up this access for them. Note that your cluster may be configured with more GPU nodes.
-
-In our case we have a single NVIDIA accelerator attached to our instance type.
-
-. Check what EC2 GPU enabled instance types we have running in our cluster
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc get machines.machine.openshift.io -A
-----
-+
-[source,bash,options="wrap"]
-----
-NAMESPACE               NAME                                    PHASE     TYPE          REGION      ZONE         AGE
-openshift-machine-api   ocp-kt5tz-master-0                      Running   c6a.2xlarge   us-east-2   us-east-2a   24h
-openshift-machine-api   ocp-kt5tz-master-1                      Running   c6a.2xlarge   us-east-2   us-east-2b   24h
-openshift-machine-api   ocp-kt5tz-master-2                      Running   c6a.2xlarge   us-east-2   us-east-2c   24h
-openshift-machine-api   ocp-kt5tz-worker-gpu-us-east-2a-9vxzv   Running   g6e.2xlarge   us-east-2   us-east-2a   24h
-openshift-machine-api   ocp-kt5tz-worker-us-east-2a-fcbcg       Running   m6a.4xlarge   us-east-2   us-east-2a   24h
-openshift-machine-api   ocp-kt5tz-worker-us-east-2b-5zx84       Running   m6a.4xlarge   us-east-2   us-east-2b   24h
-openshift-machine-api   ocp-kt5tz-worker-us-east-2c-z9xzs       Running   m6a.4xlarge   us-east-2   us-east-2c   24h
-----
-
-. In our example, we have a https://aws.amazon.com/ec2/instance-types/g6e[**g6e.2xlarge**,window=_blank] instance type, but your cluster may have a different instance type or GPU configuration. Take a moment to check with your classmates or instructor what instance types are present in your environment.
-+
-To see how many GPUs are allocatable on your node, run:
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc get $(oc get node -o name -l beta.kubernetes.io/instance-type=g6e.2xlarge) -o=jsonpath={.status.allocatable} | python3 -m json.tool
-----
-+
-(If your instance type is different, adjust the `g6e.2xlarge` label accordingly.)
-+
-For our cluster, the output shows **1** allocatable GPU:
-+
-[source,bash,options="wrap"]
-----
-{
-  "cpu": "7500m",
-  "ephemeral-storage": "114345831029",
-  "hugepages-1Gi": "0",
-  "hugepages-2Mi": "0",
-  "memory": "63801456Ki",
-  "nvidia.com/gpu": "1",
-  "pods": "250"
-}
-----
-
-. Label the node with the **device-plugin.config** that matches the GPU instance product e.g. **NVIDIA-L40S** for this instance type.
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc label --overwrite node \
-    --selector=nvidia.com/gpu.product=NVIDIA-L40S \
-    nvidia.com/device-plugin.config=NVIDIA-L40S
-----
-+
-TIP: If your instance type has different accelerators, you will need to adjust the label used here and the ConfigMap in the next step.
-
-. Now apply the https://github.com/redhat-ai-services/etx-agentic-ai/tree/main/infra/applications/gpu[GPU Cluster Policy and ConfigMap,window=_blank] objects that setup https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/gpu-sharing.html[Time Slicing,window=_blank] - a method to share nvidia gpus.
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc apply -k infra/applications/gpu
-----
-
-. After approx ~30sec check the number of allocatable GPUs
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc get $(oc get node -o name -l beta.kubernetes.io/instance-type=g6e.2xlarge) -o=jsonpath={.status.allocatable} | python3 -m json.tool
-----
-+
-This should now give an output with **8** allocatable GPUs. Great - now our data science team can see and use eight GPUs even though we only have one physical GPU.
-+
-[source,bash,options="wrap"]
-----
-{
-  "cpu": "7500m",
-  "ephemeral-storage": "114345831029",
-  "hugepages-1Gi": "0",
-  "hugepages-2Mi": "0",
-  "memory": "63801456Ki",
-  "nvidia.com/gpu": "8",
-  "pods": "250"
-}
-----
 
 . Done ✅
 
