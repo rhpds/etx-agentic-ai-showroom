@@ -13,7 +13,6 @@ Estimated time: 30 minutes
 == What you'll do
 
 * Verify cluster access and bootstrap GitOps
-* +++<del>Initialize Vault and hydrate secrets</del>+++
 * Fork the repo, set PATs and webhooks
 * Ensure Console Links and core apps are healthy
 
@@ -26,7 +25,6 @@ Before starting this lab, ensure you have the following:
 * **GitHub Account**: You'll need access to fork repositories and collaborate
 * **Git CLI**: Installed and configured on your local machine
 * **OpenShift CLI (oc)**: Download from https://mirror.openshift.com/pub/openshift-v4/clients/ocp/[OpenShift client downloads,window=_blank]
-* +++<del>**HashiCorp Vault CLI**: Download from https://developer.hashicorp.com/vault/install[Vault installation guide,window=_blank]</del>+++
 * **jq**: Command-line JSON processor for parsing command outputs
 * **Python 3**: Provides `json.tool` for pretty-printing JSON
 * **envsubst (gettext)**: For environment variable substitution in manifests
@@ -40,7 +38,7 @@ Before starting this lab, ensure you have the following:
 * **Container Concepts**: Understanding of containers and Kubernetes/OpenShift (helpful but not required)
 
 === Provided by Instructors
-* **OpenShift Cluster Access**: +++<del>GPU-enabled cluster</del>+++ with admin credentials
+* **OpenShift Cluster Access**: Admin credentials
 * **Red Hat MaaS Access**: Model-as-a-Service credentials for LLaMA models
 * **Workshop Materials**: All necessary configuration files and scripts
 * **Environment Variables**: Cluster-specific configuration values
@@ -48,12 +46,9 @@ Before starting this lab, ensure you have the following:
 
 == Getting Started
 
-Before diving into the agentic AI lab, we need to set up our development environment. This involves two key steps:
+Before diving into the agentic AI lab, we need to set up our development environment. This involves:
 
-1. **Setting up GitOps**: Configure automated deployment pipelines that manage our infrastructure and applications
-2. **Configuring Secret Management**: Set up secure handling of API keys and credentials +++<del>using HashiCorp Vault</del>+++
-
-**Why this matters**: This approach keeps sensitive information (like API keys) separate from our code, following security best practices while enabling automated deployments.
+* **Setting up GitOps**: Configure automated deployment pipelines that manage our infrastructure and applications
 
 [IMPORTANT]
 ====
@@ -64,34 +59,7 @@ Before diving into the agentic AI lab, we need to set up our development environ
 
 * **Manual setup**: The step-by-step instructions below show how each component works - perfect for understanding GitOps and secret management in detail
 
-== Quick Starts
-
-You will do this AFTER you gain access to your cluster. We are explaining it here for awareness before you login so you know how to balance getting started qucikly with the information provided in the lab.
-
-. We have created some OpenShift Quick Starts to make the initial configuration steps a bit easier to follow. They also allow us to standardize the environment being used (bash, linux command line, tools).
-+
-You can browse to the Quick Starts in OpenShift Web Console > Help **?** > QuickStarts - then search for **etx**
-+
-.ETX Quick Starts
-image::etx-quick-starts.png[ETX Quick Starts, 800]
-
-. Select the first one **ETX -1- The Basics** and then Click **Start** > **Step 1 - Set your shell**
-
-. Next Select **Run in Web Terminal** play button. The **Initialize Terminal** screen should appear in the bottom half of your browser.
-
-. Select **Start** to run the terminal
-+
-.ETX 1 The Basics
-image::etx-quick-starts2.png[ETX 1 The Basics, 800]
-
-. Continue with the ETX Quick Starts and follow the documentation at the same time. We will point out in the docs if a step or section is covered in a **Quick Start** using a **TIP**
-+
-TIP: Covered in a Quick Start
-
-. Done ✅
-
 == Initial Setup
-
 
 . **Receive your cluster credentials** 🔐
 +
@@ -217,7 +185,7 @@ Specialized services for AI/ML workloads and agentic applications:
 
 == Required Applications
 
-As a Team, you need to do each of these Prerequisites.
+You need to do each of these Prerequisites.
 
 . We **Recommend** using the **Quick Starts** initially, then your laptop after the initial setup.
 +
@@ -226,7 +194,6 @@ Start with the **Quick Start** - **ETX 1 The Basics**
 . You may choose another client to bootstrap from (not recommended **especially** if you are on **MacOSX** which is not fully tested). It could be:
 ** Your https://www.dell.com/en-au/shop/dell-laptops/xps-16-laptop/spd/xps-16-9640-laptop[Laptop,window=_blank] or a https://docs.fedoraproject.org/en-US/fedora-silverblue/toolbox[Toolbx,window=_blank] or a https://docs.fedoraproject.org/en-US/docs/[Fedora like jumphost,window=_blank] or a https://docs.redhat.com/en/documentation/red_hat_openshift_ai_cloud_service/1/html/working_on_data_science_projects/using-project-workbenches_projects#creating-a-project-workbench_projects[Workbench Terminal,window=_blank] that can access your cluster and the internet
 ** Your bootstrap client must have a https://packages.fedoraproject.org/pkgs/bash/bash/[bash,window=_blank] shell with https://packages.fedoraproject.org/pkgs/openssl/openssl/[openssl,window=_blank], https://docs.ansible.com/ansible/2.9/cli/ansible-vault.html#ansible-vault[ansible-vault,window=_blank] installed
-** Download and https://developer.hashicorp.com/vault/install[Install the Hashi Vault Client binary,window=_blank]
 ** Login to your OpenShift cluster using the https://mirror.openshift.com/pub/openshift-v4/clients/ocp/[OpenShift client,window=_blank] as the cluster-admin user
 
 . Setup env vars and login to OpenShift. You can either use the OpenShift Web Console to grab a login command or use the details below to construct the login command on your own.
@@ -247,7 +214,7 @@ oc login --server=https://api.${CLUSTER_NAME}.${BASE_DOMAIN}:6443 -u admin -p ${
 
 . Done ✅
 
-=== MaaS credentials (Optional)
+=== MaaS credentials
 
 [NOTE]
 ====
@@ -285,139 +252,6 @@ export MODEL_EMBED_NAME=/mnt/models
 ----
 
 . Done ✅
-====
-
-=== Vault Setup for GitOps
-
-TIP: Covered in a Quick Start
-
-We need to setup vault for your environment.
-
-. Initialize the vault. Make sure you record the **UNSEAL_KEY** and **ROOT_TOKEN** somewhere safe and export them as env vars.
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc -n vault exec -ti vault-0 -- vault operator init -key-threshold=1 -key-shares=1 -tls-skip-verify
-----
-+
-[source,bash,options="wrap",role="execute"]
-----
-export UNSEAL_KEY=EGbx...
-export ROOT_TOKEN=hvs.wnz...
-----
-+
-After running the vault initialization command, you'll see output containing the unseal key and root token. Copy these values and export them as environment variables as shown.
-
-image::vault-init.png[Vault initialization output showing unseal key and root token]
-
-. Unseal the Vault.
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc -n vault exec -ti vault-0 -- vault operator unseal -tls-skip-verify $UNSEAL_KEY
-----
-+
-TIP: (Optional Reading) You can see more details of this sort of setup https://eformat.github.io/rainforest-docs/#/2-platform-work/3-secrets[here,window=_blank] if you need more background.
-
-. Setup env vars
-+
-[source,bash,options="wrap",role="execute"]
-----
-export VAULT_ROUTE=vault-vault.apps.${CLUSTER_NAME}.${BASE_DOMAIN}
-export VAULT_ADDR=https://${VAULT_ROUTE}
-export VAULT_SKIP_VERIFY=true
-----
-
-. Login to Vault.
-+
-[source,bash,options="wrap",role="execute"]
-----
-vault login token=${ROOT_TOKEN}
-----
-
-. You should see the following output:
-+
-.Vault Login
-image::vault-login.png[Vault Login, 400]
-
-. Setup env vars
-+
-[source,bash,options="wrap",role="execute"]
-----
-export APP_NAME=vault
-export PROJECT_NAME=openshift-policy
-export CLUSTER_DOMAIN=apps.${CLUSTER_NAME}.${BASE_DOMAIN}
-----
-
-. Create the Vault Auth using Kubernetes auth
-+
-[source,bash,options="wrap",role="execute"]
-----
-vault auth enable -path=${CLUSTER_DOMAIN}-${PROJECT_NAME} kubernetes
-export MOUNT_ACCESSOR=$(vault auth list -format=json | jq -r ".\"$CLUSTER_DOMAIN-$PROJECT_NAME/\".accessor")
-----
-
-. Create an ACL Policy - Argo CD will only be allowed to __READ__ secret values for hydration into the cluster
-+
-[source,bash,options="wrap",role="execute"]
-----
-vault policy write $CLUSTER_DOMAIN-$PROJECT_NAME-kv-read -<< EOF
-path "kv/data/*" {
-capabilities=["read","list"]
-}
-EOF
-----
-
-. Enable kv2 to store our secrets
-+
-[source,bash,options="wrap",role="execute"]
-----
-vault secrets enable -path=kv/ -version=2 kv
-----
-
-. Bind the ACL to Auth policy
-+
-[source,bash,options="wrap",role="execute"]
-----
-vault write auth/$CLUSTER_DOMAIN-$PROJECT_NAME/role/$APP_NAME \
-bound_service_account_names=$APP_NAME \
-bound_service_account_namespaces=$PROJECT_NAME \
-policies=$CLUSTER_DOMAIN-$PROJECT_NAME-kv-read \
-period=120s
-----
-
-. Grab the cluster CA certificate on the API
-+
-[source,bash,options="wrap",role="execute"]
-----
-CA_CRT=$(echo "Q" | openssl s_client -showcerts -connect api.${CLUSTER_NAME}.${BASE_DOMAIN}:6443 2>&1 | awk '/BEGIN CERTIFICATE/,/END CERTIFICATE/ {print $0}')
-----
-
-. Add the initial token and CA cert to the Vault Auth Config.
-+
-[source,bash,options="wrap",role="execute"]
-----
-vault write auth/${CLUSTER_DOMAIN}-${PROJECT_NAME}/config \
-kubernetes_host="$(oc whoami --show-server)" \
-kubernetes_ca_cert="$CA_CRT"
-----
-
-. Done ✅
-
-==== Create a CronJob
-
-[TIP]
-====
-In case the vault pod, or the node it runs on, reboots, it is always handy to auto unseal the vault.
-
-[source,bash,options="wrap",role="execute"]
-----
-cat infra/bootstrap/vault-unseal-cronjob.yaml | envsubst | oc apply -f-
-----
-
-image::vault-cronjob.png[Vault Cronjob Created, 600]
-
-Done ✅
 ====
 
 === Tavily search token
@@ -496,140 +330,6 @@ echo https://global-policy-server-openshift-policy.${CLUSTER_DOMAIN}/api/webhook
 image::github-webhook.png[GitHub Webhook, 400]
 
 . Done ✅
-
-=== The Secrets File
-
-TIP: Covered in a Quick Start
-
-[IMPORTANT]
-.Why Do This
-====
-We need to be able to hydrate the vault from a single source of truth. It makes secret management very efficient. In the case if a disaster, we need to recover the vault environment quickly. We can check this file into git as an AES256 encoded file (until quantum cracks it ❈).
-====
-
-The secrets file is just a bash shell script that uses the vault cli.
-
-. Unencrypt the secrets file
-+
-NOTE: the instructor will provide the key
-+
-[source,bash,options="wrap",role="execute"]
-----
-ansible-vault decrypt infra/secrets/vault-sno
-----
-
-. Review the file and set the gathered api tokens as env vars in the secrets file. Add your **Tavily** and **GitHub Pat** tokens to the file.
-+
-.Add API Tokens
-image::add-apikeys-secrets.png[Add API Tokens, 300]
-+
-[TIP]
-====
-You can create a secrets file from scratch by copying the example file provided. Only do this if you are using your own MaaS API keys or do not have access to the decrypt key.
-
-[source,bash,options="wrap",role="execute"]
-----
-cp infra/secrets/vault-sno-example infra/secrets/vault-sno
-----
-====
-
-. Hydrate the vault by running the secrets file as a script. When prompted to enter the root token, use the $ROOT_TOKEN you exported earlier.
-+
-[source,bash,options="wrap",role="execute"]
-----
-sh infra/secrets/vault-sno
-----
-
-. Encrypt the secrets file and check it back into your git fork. Generate a large secret key to use to encrypt the file and keep it safe.
-+
-TIP: you can put the key in vault 🔑
-+
-[source,bash,options="wrap",role="execute"]
-----
-openssl rand -hex 32
-----
-
-. Ansible vault encrypt will prompt you for the Key twice
-+
-[source,bash,options="wrap",role="execute"]
-----
-ansible-vault encrypt infra/secrets/vault-sno
-----
-
-. Add to git
-+
-[source,bash,options="wrap",role="execute"]
-----
-# Its not real unless its in git
-git add infra/secrets/vault-sno; git commit -m "hydrated vault with apikeys"; git push
-----
-+
-[TIP]
-.Optional (but highly recommended)
-====
-You can add a pre-commit git hook client side so that you do not check in an unencrypted AES256 secrets file. Run this after cloning forked repo to configure git hooks:
-
-[source,bash,options="wrap",role="execute"]
-----
-chmod 755 infra/bootstrap/pre-commit
-cd .git/hooks
-ln -s ../../infra/bootstrap/pre-commit pre-commit
-cd ../../
-----
-====
-
-. Lastly, create the secret used by Argo CD to connect to Vault in our OpenShift cluster. Since the OpenShift TokenAPI is used, we only really reference the service account details.
-+
-[source,yaml,options="wrap",role="execute"]
-----
-cat <<EOF | oc apply -f-
-kind: Secret
-apiVersion: v1
-metadata:
-  name: team-avp-credentials
-  namespace: openshift-policy
-stringData:
-  AVP_AUTH_TYPE: "k8s"
-  AVP_K8S_MOUNT_PATH: "auth/${CLUSTER_DOMAIN}-${PROJECT_NAME}"
-  AVP_K8S_ROLE: "vault"
-  AVP_TYPE: "vault"
-  VAULT_ADDR: "https://vault.vault.svc:8200"
-  VAULT_SKIP_VERIFY: "true"
-type: Opaque
-EOF
-----
-
-. Your _Agentic_ Argo CD is now setup to read secrets from Vault and should be in a healthy state.
-+
-image::vault-health.png[Vault Health, 600]
-
-. You can also login to Vault using the Vault UI and $ROOT_TOKEN from the OpenShift web console to check out the configuration if it is unfamiliar.
-+
-.Login to Vault
-image::vault-console.png[Login to Vault, 400]
-
-. Done ✅
-
-=== 💥 Expert Mode 💥
-
-[IMPORTANT]
-.Experts Only ⛷️
-====
-Only run this script if you are familiar with the Hashi Vault setup we just ran through and you skipped all the previous vault steps to get to here. Run the all-in-one vault setup script.
-
-[source,bash,options="wrap",role="execute"]
-----
-export CLUSTER_NAME=cluster-4xglk.4xglk
-export BASE_DOMAIN=sandbox2518.opentlc.com
-export AWS_PROFILE=etx-ai
-export ADMIN_PASSWORD=password
-export ANSIBLE_VAULT_SECRET=94bbffb36de4285abcf95b5d650e0790c13939bc0e2f5214aaf58196456b8989
-
-./infra/bootstrap/vault-setup.sh
-----
-
-Done ✅
-====
 
 == Complete the Bootstrap
 
