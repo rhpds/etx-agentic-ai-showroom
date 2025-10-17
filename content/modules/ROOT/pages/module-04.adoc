@@ -21,7 +21,7 @@ Estimated time: 60–90 minutes
 == What you'll do
 
 * Deploy Llama Stack and Playground
-* Register builtin/MCP tools
+* Register built-in/MCP tools
 * Develop and refine prompts in Playground
 * Capture configuration and decisions for later modules
 
@@ -32,7 +32,7 @@ It is nice to have a small LLM available locally to validate the default deploym
 Since we have a GPU available we can deploy the **models** gitops application which contains a reference deployment of the **granite-31-2b-instruct** model. The same app also deploys out the secrets for the **Models as a Service (MaaS)** that we setup in the bootstrap phase.
 
 . Rename the file https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/app-of-apps/sno/models.yaml.undeploy[**infra/app-of-apps/sno/models.yaml.undeploy**,window=_blank] -> https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/app-of-apps/sno/models.yaml[**infra/app-of-apps/sno/models.yaml**,window=_blank]
-+ 
++
 image::models-deploy.png[Models Deploy, 300]
 
 . Check this file into git
@@ -44,7 +44,7 @@ git add .; git commit -m "deploy default models"; git push
 ----
 
 . Check Argo CD that **models** has appeared under the **etx-app-of-apps**
-+ 
++
 image::models-etx-app-of-apps.png[Models GitOps, 800]
 
 . Navigate to ACM by clicking the dropdown in the top left of the OpenShift console to select `All Clusters`
@@ -60,11 +60,11 @@ image::acm-governance.png[ACM Governance, 800]
 image::acm-policies.png[ACM Policies, 800]
 
 . Check ACM Policies that **models-serving** has appeared with the expected results.
-+ 
++
 image::models-policy.png[Models Policy, 800]
 
 . Check in RHOAI that there is a model deployment in the **vllm-server** namespace
-+ 
++
 image::models-rhoai.png[Models RHOAI, 800]
 +
 TIP: Check the pod status
@@ -85,15 +85,15 @@ image::model-external-endpoint.png[Model external endpoint,800]
 
 
 . Paste the external endpoint into your browser and append **/docs** to the URL to browse them
-+ 
++
 image::models-granite-swagger.png[Models OpenAI, 800]
 
 . Check the call to the models endpoint **/v1/models** returns OK by selecting "Try it out" and then "Execute"
-+ 
++
 image::models-swagger-v1-models.png[Models OpenAI v1/models, 800]
 
 . To learn more about the model deployment, you can checkout the code here https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/applications/models/base/granite/granite-31-2b-vllm-oci.yaml[**infra/applications/models/base/granite/granite-31-2b-vllm-oci.yaml**,window=_blank]
-+ 
++
 image::models-deploy-code.png[Models Code, 300]
 
 == LlamaStack
@@ -113,7 +113,7 @@ The Llama Stack K8s Operator is a Kubernetes operator that automates the deploym
 == DataScienceCluster Custom Resource
 
 . Rename the file https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/app-of-apps/sno/llama-stack-operator.yaml.undeploy[**infra/app-of-apps/sno/llama-stack-operator.yaml.undeploy**,window=_blank] -> https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/app-of-apps/sno/llama-stack-operator.yaml[**infra/app-of-apps/sno/llama-stack-operator.yaml**,window=_blank]
-+ 
++
 image::llama-stack-operator-deploy.png[LlamaStack Operator, 300]
 
 . Check this file into git
@@ -125,7 +125,7 @@ git add .; git commit -m "deploy llamastack operator"; git push
 ----
 
 . Check the LlamaStack controller manager pod is running in the **llama-stack-k8s-operator-controller-manager** Namespace
-+ 
++
 image::llama-stack-controller-manager2.png[LlamaStack Controller Manager Pod, 800]
 
 == LlamaStackDistribution Custom Resource
@@ -156,14 +156,14 @@ spec:
        port: 8321
      userConfig:
         # reference to the configmap that contains Llama stack configuration.
-       configMapName: llama-stack-config 
+       configMapName: llama-stack-config
 ----
 
 NOTE: We maintain a https://github.com/eformat/distribution-remote-vllm[build of LlamaStack,window=_blank] that https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/applications/llama-stack/base/llama-stack.yaml#L39[pins the image version,window=_blank] so we can ensure stability whilst the upstream rapidly changes. We expect to use the **rh-dev** distribution once <<Using the DataScienceCluster Resource to configure the LlamaStack Operator>> is resolved.
 
 == Using ConfigMap for run.yaml Configuration
 
-The operator supports using ConfigMaps to store the https://github.com/llamastack/llama-stack/blob/main/llama_stack/distributions/nvidia/run.yaml[run.yaml,window=_blank] configuration file. 
+The operator supports using ConfigMaps to store the https://github.com/llamastack/llama-stack/blob/main/llama_stack/distributions/nvidia/run.yaml[run.yaml,window=_blank] configuration file.
 
 * **Centralized Configuration**: Store all Llama Stack settings in one place
 * **Dynamic Updates**: Changes to the ConfigMap automatically restart pods to load new configuration
@@ -204,7 +204,7 @@ data:
 ----
 
 . Rename the file https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/app-of-apps/sno/llama-stack.yaml.undeploy[**infra/app-of-apps/sno/llama-stack.yaml.undeploy**,window=_blank] -> https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/app-of-apps/sno/llama-stack.yaml[**llama-stack.yaml**,window=_blank]
-+ 
++
 image::llama-stack-deploy.png[LlamaStack Deploy, 300]
 
 . Edit the file https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/applications/llama-stack/overlay/policy-generator-config.yaml[**infra/applications/llama-stack/overlay/policy-generator-config.yaml**,window=_blank] to point to the **basic/** folder
@@ -412,7 +412,7 @@ Total models: 1
 === LlamaStack User Interface
 
 . LlamaStack comes with a simple UI. Let's deploy it so we can start using our LLM and Web Search tool. Rename the file https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/app-of-apps/sno/llama-stack-playground.yaml.undeploy[**infra/app-of-apps/sno/llama-stack-playground.yaml.undeploy**,window=_blank] -> https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/app-of-apps/sno/llama-stack-playground.yaml[**llama-stack-playground.yaml**,window=_blank]
-+ 
++
 image::llama-stack-playground-deploy.png[LlamaStack Deploy, 300]
 
 . Check these files into git
@@ -653,7 +653,7 @@ MCP is an upcoming, popular standard for tool discovery and execution. It is a p
 First we need to deploy the pod that runs the https://github.com/containers/kubernetes-mcp-server[**mcp::openshift**,window=_blank] functions. Then we need to configure LlamaStack to use our first MCP tool that interacts with the OpenShift cluster. MCP servers are configured similarly to the tool and toolgroup provider.
 
 . Rename the file https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/app-of-apps/sno/mcp-openshift.yaml.undeploy[**infra/app-of-apps/sno/mcp-openshift.yaml.undeploy**,window=_blank] -> https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/app-of-apps/sno/mcp-openshift.yaml[**infra/app-of-apps/sno/mcp-openshift.yaml**,window=_blank]
-+ 
++
 image::mcp-openshift-deploy.png[LlamaStack MCP OpenShift, 300]
 
 . Check this file into git
@@ -743,7 +743,7 @@ This works without any parsing errors in the playground OK
 The last MCP Server we need to deploy https://github.com/github/github-mcp-server[interacts with GitHub,window=_blank]. The configuration is very similar to MCP OpenShift.
 
 . Rename the file https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/app-of-apps/sno/mcp-github.yaml.undeploy[**infra/app-of-apps/sno/mcp-github.yaml.undeploy**,window=_blank] -> https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/app-of-apps/sno/mcp-github.yaml[**infra/app-of-apps/sno/mcp-github.yaml**,window=_blank]
-+ 
++
 image::mcp-github-deploy.png[LlamaStack MCP GitHub, 300]
 
 . Check this file into git
@@ -813,7 +813,7 @@ LlamaStack integrates with the Observability stack we deployed as part of the bo
 +
 image::llama-stack-sno.png[LlamaStack Telemetry, 300]
 
-. Checking the base ConfigMap shows the telemetry stanza with the service name, sinks and the OTEL Tracing endpoint which is set as an environment variable on the Deployment 
+. Checking the base ConfigMap shows the telemetry stanza with the service name, sinks and the OTEL Tracing endpoint which is set as an environment variable on the Deployment
 +
 [source,yaml,options="wrap"]
 ----
@@ -944,7 +944,7 @@ status: {}
 ----
 
 . Check the LlamaStack controller manager pod is running in the **redhat-ods-applications** Namespace
-+ 
++
 image::llama-stack-controller-manager.png[LlamaStack Controller Manager Pod, 800]
 ====
 
