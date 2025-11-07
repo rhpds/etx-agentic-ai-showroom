@@ -6,9 +6,9 @@ Persona: AI Engineer (primary). Also relevant: Platform Engineer.
 ====
 
 [IMPORTANT]
-.In this section
+.In this section [Needs update]
 ====
-We are going to build out the LlamaStack server configuration from the ground up. Along the way we will use the LlamaStack playground UI as a test client and show how to configure providers, models and MCP servers.
+We are going to look at the details of LlamaStack server configuration. Along the way we will use the LlamaStack playground UI as a test client and show how to configure providers, models and MCP servers.
 
 In the final section we will use the playground to develop our Use Case specific prompts.
 ====
@@ -28,17 +28,87 @@ Estimated time: 60–90 minutes
 
 == LlamaStack
 
-https://llama-stack.readthedocs.io/en/latest/[LlamaStack,window=_blank] is the open-source framework for building generative AI applications. We are going to deploy LlamaStack using the Operator and then take a look around using the client CLI and the playground UI.
+https://llama-stack.readthedocs.io/en/latest/[LlamaStack,window=_blank] is the open-source framework for building generative AI applications. We are going to deploy LlamaStack distribution and then take a look around using the client CLI and the playground UI.
 
-=== LlamaStack K8s Operator
 
-https://github.com/llamastack/llama-stack-k8s-operator[Github Upstream link,window=_blank].
+=== LlamaStack Distribution
 
-The Llama Stack K8s Operator is a Kubernetes operator that automates the deployment and management of Llama Stack servers in Kubernetes environments. It provides a declarative way to manage AI model serving infrastructure. It is:
+We'll be creating a LlamaStack Distribution custom resource (CR) to define how a LlamaStack server should be deployed. It allows you to specify:
 
-. Kubernetes native and follows standard operator development pattern.
-. Supports Ollama and vLLM inference providers
-. Allows configuring and managing LlamaStack servers and client instances.
+* **Server Configuration**: Which distribution to use (Ollama, vLLM, etc.)
+* **Container Specifications**: Port, environment variables, resource limits
+
+There is a unique instance of LlamaStack distribution deployed for each lab user. Here is the LlamaStack Distribution CR we're using for this lab.
+
+image::llamastackdistribution-yaml.png[LlamaStack distribution YAML, 800]
+
+You can specify/inject the secrets for the services that'll be interacting with LlamaStack server. In our case, we've specified the secrets for [1] MaaS API and [2] Tavily search API. You also list the user configuration used with this distribution.
+
+=== LlamaStack ConfigMap
+
+A ConfigMap can be used to store run.yaml configuration for each LlamaStack distribution. Updates to the ConfigMap will restart the Pod to load the new data.
+
+Example to create a run.yaml ConfigMap
+
+[source,yaml,options="wrap"]
+----
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: llama-stack-config
+  namespace: {{ .Values.username }}-llama-stack
+data:
+  run.yaml: |
+    # Llama Stack configuration
+    version: '2'
+    image_name: vllm
+    apis:
+    - inference
+    - tool_runtime
+    - agents
+    - safety
+    - vector_io
+    models:
+      - metadata: {}
+        model_id: {{ .Values.defaultModel.name }}
+        provider_id: vllm-{{ .Values.defaultModel.name }}
+        provider_model_id: {{ .Values.defaultModel.name }}
+        model_type: llm
+    providers:
+      inference:
+      - provider_id: vllm-{{ .Values.defaultModel.name }}
+        provider_type: "remote::vllm"
+        config:
+          url: {{ .Values.defaultModel.url }}
+          context_length: 4096
+          api_token: ${env.DEFAULT_MODEL_API_TOKEN}
+          tls_verify: true
+      tool_runtime:
+      - provider_id: tavily-search
+        provider_type: remote::tavily-search
+        config:
+          api_key: ${env.TAVILY_API_KEY}
+          max_results: 3
+      agents:
+      - provider_id: meta-reference
+        provider_type: inline::meta-reference
+        config:
+          persistence_store:
+            type: sqlite
+            db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/starter}/agents_store.db
+          responses_store:
+            type: sqlite
+            db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/starter}/responses_store.db
+    tools:
+      - name: builtin::websearch
+        enabled: true
+    tool_groups:
+    - provider_id: tavily-search
+      toolgroup_id: builtin::websearch
+    server:
+      port: 8321
+----
+
 
 === Interacting with LlamaStack
 
