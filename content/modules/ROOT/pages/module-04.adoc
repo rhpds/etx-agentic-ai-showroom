@@ -215,20 +215,37 @@ Total models: 1
 
 === LlamaStack User Interface
 
-. LlamaStack comes with a simple UI. [TODO: Add info about Playground]
+LlamaStack comes with a simple UI called Playground. For this lab, a Playground instance is already deployed for each user.
 
+. Checkout the Playground pod.
++
+image::llamastack-playground-pod.png[LlamaStack Playground Pod, 800]
++
+
+. Click on the route for this pod to access the Playground.
++
+image::llamastack-playground-route.png[LlamaStack Playground Route, 800]
++
+
+. Here is the Playground, GUI for interacting with LlamaStack services.
 +
 image::llama-stack-playground2.png[LlamaStack Playground UI, 800]
 
-. We can Chat with the LLM - this calls the **/v1/chat/completion** endpoint that we can find in the OpenAI docs for the vLLM served model. You can prompt it to check the connection is working. Ask the LLM a more complex question such as:
+. Let's first Chat with the LLM by asking a question such as:
 +
 [source,bash,options="wrap",role="execute"]
 ----
 What is LlamaStack ?
 ----
-to see if it contains that information.
+
 +
 image::llama-stack-playground-hello.png[LlamaStack Playground Hello, 800]
++
+
+[NOTE]
+Playground calls the **/v1/chat/completion** endpoint that we can find in the OpenAI docs for the vLLM served model.
+
+. Now, let's ask LLM a question for which it lacks information (e.g. real time data):
 
 +
 [source,bash,options="wrap",role="execute"]
@@ -236,24 +253,48 @@ image::llama-stack-playground-hello.png[LlamaStack Playground Hello, 800]
 What is the weather today in Brisbane ?
 ----
 +
-In the playground this actually uses the **Regular** agent to call the Tool. The LLM makes its own decision to call the Tool. The tool returns a result to LLM and allows LLM to perform a new decision. This process loops until the LLM decides that a result can be provided to the user or certain conditions are met. The LLM produces a final result for the agent.
-+
-image::agent.png[Agent, 600]
-+
-image::llama-stack-websearch-agent.png[LlamaStack Websearch Agent, 800]
+image::llamastack-playground-no-websearch.png[LlamaStack Playground without websearch, 800]
 
-. Try out the **ReAct** agent to call the tool with the same prompt:
+
+. In order to find the realtime information, the LLM needs to call a tool like websearch. We also need to specify what type of agent to call. Let's select the **Regular** agent to call the Tool.
+
++
+image::llamastack-playground-websearch.png[LlamaStack Playground with websearch, 800]
+
+. Now, let's ask LLM the same question again:
+
++
+[source,bash,options="wrap",role="execute"]
+----
+What is the weather today in Brisbane ?
+----
+The LLM is now able to the answer with realtime data provided by the websearch tool.
+
++
+image::llamastack-playground-websearch-regular.png[LlamaStack Playground regular websearch, 800]
+
++
+In summary, here is the workflow with a Regular agent.
++
+image::agent.png[Agent workflow, 600]
+
+
+
+. Now lets try out the **ReAct** agent to call the tool with the same prompt:
 +
 [source,bash,options="wrap",role="execute"]
 ----
 What is the weather today in Brisbane ?
 ----
 +
-Notice that the agent first Reasons - where the LLM thinks about the data or tool results, Acts - where the LLM performs an action, LLM then Observes the result of the tool call, before returning the result. This is the essence of the ReAct agent pattern.
+Notice that the agent first Reasons - where the LLM thinks about the data or tool results, Acts - where the LLM performs an action, LLM then Observes the result of the tool call, before returning the result.
++
+image::llamastack-playground-websearch-react.png[LlamaStack Websearch ReAct Agent, 800]
+
++
+In summary, here is the workflow with a ReAct agent.
 +
 image::react-agent.png[ReAct Agent, 600]
-+
-image::llama-stack-websearch-react.png[LlamaStack Websearch ReAct Agent, 800]
 
 . Done ✅
 
