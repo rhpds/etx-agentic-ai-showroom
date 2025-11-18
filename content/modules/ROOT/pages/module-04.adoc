@@ -301,33 +301,25 @@ image::react-agent.png[ReAct Agent, 600]
 
 === LlamaStack mcp::openshift
 
-MCP is an upcoming, popular standard for tool discovery and execution. It is a protocol that allows tools to be dynamically discovered from an MCP endpoint and can be used to extend the agent’s capabilities.
+Model Context Protocol (MCP) is a popular standard for tool discovery and execution. It allows tools to be dynamically discovered from an MCP endpoint and can be used to extend the agent’s capabilities.
 
-First we need to deploy the pod that runs the https://github.com/containers/kubernetes-mcp-server[**mcp::openshift**,window=_blank] functions. Then we need to configure LlamaStack to use our first MCP tool that interacts with the OpenShift cluster. MCP servers are configured similarly to the tool and toolgroup provider.
+For this lab, we've already deployed the pod that runs the https://github.com/containers/kubernetes-mcp-server[**mcp::openshift**,window=_blank] functions. However, we need to configure LlamaStack to use the MCP tool that interacts with the OpenShift cluster. MCP servers are configured similarly to the websearch tool.
 
-. Rename the file https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/app-of-apps/sno/mcp-openshift.yaml.undeploy[**infra/app-of-apps/sno/mcp-openshift.yaml.undeploy**,window=_blank] -> https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/app-of-apps/sno/mcp-openshift.yaml[**infra/app-of-apps/sno/mcp-openshift.yaml**,window=_blank]
+
+We need to edit the LlamaStack ConfigMap to add tool runtime and tool group.
+
+. Search for your namespace (userx-llama-stack), click on ConfigMaps and select llama-stack-config file.
+
 +
-image::mcp-openshift-deploy.png[LlamaStack MCP OpenShift, 300]
+image::llamastack-configmap-location.png[LlamaStack ConfigMap location, 800]
 
-. Check this file into git
-+
-[source,bash,options="wrap",role="execute"]
-----
-# Its not real unless its in git
-git add .; git commit -m "deploy mcp::openshift"; git push
-----
 
-. Check Argo CD and ACM and for the MCP Pod
-+
-image::mcp-openshift-argocd.png[LlamaStack Basic Argo CD, 800]
-+
-image::mcp-openshift-acm.png[LlamaStack Basic ACM, 800]
+. Click on YAML tab.
 
-. Check MCP Pod is running OK, check its logs
 +
-image::mcp-openshift-pod.png[LlamaStack Basic Pod, 800]
+image::llamastack-configmap.png[LlamaStack ConfigMap, 800]
 
-. Next we need to configure LlamaStack. Open the https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/applications/llama-stack/overlay/mcp-openshift/configmap.yaml[**mcp-openshift/configmap.yaml**,window=_blank] overlay and check where we add the tool runtime for MCP
+. Now, we'll add the tool runtime for MCP:
 +
 [source,yaml,options="wrap"]
 ----
@@ -337,57 +329,36 @@ image::mcp-openshift-pod.png[LlamaStack Basic Pod, 800]
         config: {}
 ----
 
-. We also add in the tool group
+. Next, we will add the tool group
 +
 [source,yaml,options="wrap"]
 ----
     tool_groups:
     - toolgroup_id: mcp::openshift
       provider_id: model-context-protocol
+      mcp_endpoint:
+        uri: http://ocp-mcp-server.mcp-openshift.svc.cluster.local:8000/sse
 ----
 
-. Edit the file https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/applications/llama-stack/overlay/policy-generator-config.yaml[**infra/applications/llama-stack/overlay/policy-generator-config.yaml**,window=_blank] to point to the **mcp-openshift/** folder
-+
-image::llama-stack-mcp-openshift.png[LlamaStack MCP OpenShift, 300]
+. Refresh the playground in the browser. Select the **Tools** playground with the **MCP Servers openshift** and expand tools from.
 
-. Check these files into git
++
+image::llamastack-playground-mcp-openshift.png[LlamaStack MCP OpenShift tool, 800]
+
+. Checkout the list of actions that can performed by MCP:OpenShift tools.
+
++
+image::llamastack-playground-mcp-openshift-tools.png[LlamaStack MCP OpenShift tool list, 800]
+
+
+. Select **Regular agent** and try the prompt:
 +
 [source,bash,options="wrap",role="execute"]
 ----
-# Its not real unless its in git
-git add .; git commit -m "deploy llama-stack with mcp-openshift"; git push
+list pods using in the mcp-openshift namespace
 ----
 
-. Refresh the playground in the browser. Select the **Tools** playground with the **MCP Servers openshift**, **ReAct agent** and **Llama4 model**. Try the prompt:
-+
-[source,bash,options="wrap",role="execute"]
-----
-list pods using the label app=ocp-mcp-server in the agent-demo namespace
-----
-+
-image::llama-playground-mcp-openshift-chat.png[LlamaStack MCP OpenShift, 800]
-
-. You will notice the the response has the Pod yaml included OK but fails to parse correctly in the llamastack-playground UI.
-
-. The pydantic errors can be seen in the playground pod logs.
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc -n llama-stack -c llama-stack-playground logs -l app.kubernetes.io/instance=llama-stack-playground
-----
-
-. Try this prompt instead using the same settings **MCP Servers openshift**, **ReAct agent** and **Llama4 model**
-+
-[source,bash,options="wrap",role="execute"]
-----
-list pods using the label app=ocp-mcp-server in the agent-demo namespace. dont give me the pod yaml, rather just give me the pod name
-----
-+
-image::llamastack-playground-pod-search-no-error.png[LlamaStack MCP OpenShift No Error, 400]
-+
-This works without any parsing errors in the playground OK
-
-. Try different models, agents and prompts. Not all of them work all of the time. This is a common problem with Tool calling and LLMs.
+. Try different agents and prompts. Not all of them work all of the time. This is a common problem with Tool calling and LLMs.
 
 . Done ✅
 
