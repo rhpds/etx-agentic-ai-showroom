@@ -364,29 +364,73 @@ list pods using in the mcp-openshift namespace
 
 === LlamaStack mcp::github
 
-The last MCP Server we need to deploy https://github.com/github/github-mcp-server[interacts with GitHub,window=_blank]. The configuration is very similar to MCP OpenShift.
+The last MCP Server we need to deploy https://github.com/github/github-mcp-server[interacts with GitHub,window=_blank]. First, we need to enable access to our github repo so MCP GitHub tool can interact with it.
 
-. Rename the file https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/app-of-apps/sno/mcp-github.yaml.undeploy[**infra/app-of-apps/sno/mcp-github.yaml.undeploy**,window=_blank] -> https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/app-of-apps/sno/mcp-github.yaml[**infra/app-of-apps/sno/mcp-github.yaml**,window=_blank]
+. **Set up your shared repository**
+.. https://github.com/rhpds/etx-agentic-ai-gitops[Fork the etx-agentic-ai repository,window=_blank] to your personal GitHub account
 +
-image::mcp-github-deploy.png[LlamaStack MCP GitHub, 300]
+.GitHub Repo Fork
+image::github-fork.png[GitHub Repo Fork, 400]
++
 
-. Check this file into git
+.. Ensure that you **Enable Issues** for your fork under **Settings** > **General** > **Features** > **Issues** as they are disabled for forked repos by default
++
+.GitHub Repo Enable Issues
+image::github-repo-enable-issues.png[GitHub Repo Enable Issues, 400]
+
+. **Clone the repository**
+.. If you're running the lab using your laptop, you can clone the repository locally to your laptop.
 +
 [source,bash,options="wrap",role="execute"]
 ----
-# Its not real unless its in git
-git add .; git commit -m "deploy mcp::github"; git push
+git clone git@github.com:your-gh-user/etx-agentic-ai-gitops.git
+cd etx-agentic-ai-gitops
 ----
++
+image::github-clone.png[GitHub Repo Clone, 400]
++
 
-. Check Argo CD and ACM and for the MCP Pod
-+
-image::mcp-github-argocd.png[LlamaStack MCP GitHub Argo CD, 800]
-+
-image::mcp-github-acm.png[LlamaStack MCP GitHub ACM, 800]
+. **Setup GitHub Token**
 
-. Check MCP Pod is running OK, check its logs
+. Create a fine-grained GitHub Personal Access (PAT) Token.
+
+. Login to GitHub in a browser, then click on your user icon > **Settings**
+
+. Select **Developer Settings** > **Personal Access Tokens** > **Fine-grained personal access tokens**
+
+. Select Button **Generate a new token** - give it a token name e.g. __etx-ai__
+
+. Set **Repository access**
 +
-image::mcp-github-pod.png[LlamaStack MCP GitHub Pod, 800]
+**All repositories**: allow access to your repositories including read-only public repos.
+
+. Give it the following permissions:
++
+**Commit statuses**: Read-Only
++
+**Content**: Read-Only
++
+**Issues**: Read and Write
++
+**Metadata**: Read-Only (this gets added automatically)
++
+**Pull requests**: Read-Only
++
+.GitHub Repo Perms
+image::github-repo-perms.png[GitHub Repo Perms, 400]
+
+. Generate the token.
++
+.GitHub Repo Token
+image::github-pat.png[GitHub Repo Token, 400]
+
+. Done ✅
+
+Add MCP GitHub
+The configuration is very similar to what we did for enable MCP OpenShift earlier.
+For this lab, we’ve already deployed the pod that runs the mcp::github functions.
+
+Now, we need to edit the LlamaStack ConfigMap to add tool runtime and tool group.
 
 . We add in the tool group. Notice that the URI for the MCP Server uses Server Sent Events (/sse).
 +
@@ -399,32 +443,25 @@ image::mcp-github-pod.png[LlamaStack MCP GitHub Pod, 800]
         uri: http://github-mcp-server.agent-demo.svc.cluster.local:80/sse
 ----
 
-. Edit the file https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/applications/llama-stack/overlay/policy-generator-config.yaml[**infra/applications/llama-stack/overlay/policy-generator-config.yaml**,window=_blank] to point to the **mcp-github/** folder
-+
-image::llama-stack-mcp-github.png[LlamaStack MCP GitHub, 300]
-
-. Check these files into git
-+
-[source,bash,options="wrap",role="execute"]
-----
-# Its not real unless its in git
-git add .; git commit -m "deploy llama-stack with mcp-github"; git push
-----
-
 . Try this prompt instead using the same settings **MCP Servers openshift**, **ReAct agent** and **Llama4 model**
 
-. Refresh the playground in the browser. Select the **Tools** playground with the **MCP Servers github**, **ReAct agent** and **Llama4 model**. Try the prompt (replace the github user with your user).
+. Refresh the playground in the browser. Select the **Tools** playground with the **MCP Servers github** and **Regular agent**. Try the prompt (replace the github user with your user).
 +
 [source,bash,options="wrap",role="execute"]
 ----
-List the branches from ${YOUR_GITHUB_USER}/etx-agentic-ai repo.
+List the branches from ${YOUR_GITHUB_USER}/etx-agentic-ai-gitops repo.
 ----
 +
 image::llama-playground-mcp-github-chat.png[LlamaStack MCP GitHub, 800]
 +
-You can see also the response in the pod logs for the mcp::github server in the agent-demo namespace if you wish to debug any further.
 
-. Try different models, agents and prompts. Not all of them work all of the time. This is a common problem with Tool calling and LLMs
+. Try different agents and prompts. Not all of them work all of the time. This is a common problem with Tool calling and LLMs
+
+. Checkout the list of actions that can performed by MCP:github tools.
+
++
+image::llamastack-playground-mcp-github-tools.png[LlamaStack MCP OpenShift tool list, 800]
+
 
 . Done ✅
 
