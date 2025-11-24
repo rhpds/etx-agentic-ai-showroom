@@ -30,86 +30,6 @@ Estimated time: 60–90 minutes
 
 https://llama-stack.readthedocs.io/en/latest/[LlamaStack,window=_blank] is the open-source framework for building generative AI applications. We are going to deploy LlamaStack distribution and then take a look around using the client CLI and the playground UI.
 
-
-=== LlamaStack Distribution
-
-We'll be creating a LlamaStack Distribution custom resource (CR) to define how a LlamaStack server should be deployed. It allows you to specify:
-
-* **Server Configuration**: Which distribution to use (Ollama, vLLM, etc.)
-* **Container Specifications**: Port, environment variables, resource limits
-
-There is a unique instance of LlamaStack distribution deployed for each lab user. Here is the LlamaStack Distribution CR we're using for this lab.
-
-image::llamastackdistribution-yaml.png[LlamaStack distribution YAML, 800]
-
-You can specify/inject the secrets for the services that'll be interacting with LlamaStack server. In our case, we've specified the secrets for [1] MaaS API and [2] Tavily search API. You also list the user configuration used with this distribution.
-
-=== LlamaStack ConfigMap
-
-A ConfigMap can be used to store run.yaml configuration for each LlamaStack distribution. Updates to the ConfigMap will restart the Pod to load the new data.
-
-Example to create a run.yaml ConfigMap
-
-[source,yaml,options="wrap"]
-----
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: llama-stack-config
-  namespace: {{ .Values.username }}-llama-stack
-data:
-  run.yaml: |
-    # Llama Stack configuration
-    version: '2'
-    image_name: vllm
-    apis:
-    - inference
-    - tool_runtime
-    - agents
-    - safety
-    - vector_io
-    models:
-      - metadata: {}
-        model_id: {{ .Values.defaultModel.name }}
-        provider_id: vllm-{{ .Values.defaultModel.name }}
-        provider_model_id: {{ .Values.defaultModel.name }}
-        model_type: llm
-    providers:
-      inference:
-      - provider_id: vllm-{{ .Values.defaultModel.name }}
-        provider_type: "remote::vllm"
-        config:
-          url: {{ .Values.defaultModel.url }}
-          context_length: 4096
-          api_token: ${env.DEFAULT_MODEL_API_TOKEN}
-          tls_verify: true
-      tool_runtime:
-      - provider_id: tavily-search
-        provider_type: remote::tavily-search
-        config:
-          api_key: ${env.TAVILY_API_KEY}
-          max_results: 3
-      agents:
-      - provider_id: meta-reference
-        provider_type: inline::meta-reference
-        config:
-          persistence_store:
-            type: sqlite
-            db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/starter}/agents_store.db
-          responses_store:
-            type: sqlite
-            db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/starter}/responses_store.db
-    tools:
-      - name: builtin::websearch
-        enabled: true
-    tool_groups:
-    - provider_id: tavily-search
-      toolgroup_id: builtin::websearch
-    server:
-      port: 8321
-----
-
-
 === Interacting with LlamaStack
 
 . Install the **llama-stack-client** - either in a notebook, or from your jumphost - ideally we match client and server versions
@@ -213,7 +133,7 @@ Total models: 1
 ----
 . Done ✅
 
-=== LlamaStack User Interface
+=== Playground: LlamaStack User Interface
 
 LlamaStack comes with a simple UI called Playground. For this lab, a Playground instance is already deployed for each user.
 
@@ -377,7 +297,7 @@ image::github-fork.png[GitHub Repo Fork, 400]
 +
 .GitHub Repo Enable Issues
 image::github-repo-enable-issues.png[GitHub Repo Enable Issues, 400]
-
++
 . **Clone the repository**
 .. If you're running the lab using your laptop, you can clone the repository locally to your laptop.
 +
@@ -392,19 +312,19 @@ image::github-clone.png[GitHub Repo Clone, 400]
 
 . **Setup GitHub Token**
 
-. Create a fine-grained GitHub Personal Access (PAT) Token.
+.. Create a fine-grained GitHub Personal Access (PAT) Token.
 
-. Login to GitHub in a browser, then click on your user icon > **Settings**
+.. Login to GitHub in a browser, then click on your user icon > **Settings**
 
-. Select **Developer Settings** > **Personal Access Tokens** > **Fine-grained personal access tokens**
+.. Select **Developer Settings** > **Personal Access Tokens** > **Fine-grained personal access tokens**
 
-. Select Button **Generate a new token** - give it a token name e.g. __etx-ai__
+.. Select Button **Generate a new token** - give it a token name e.g. __etx-ai__
 
-. Set **Repository access**
+.. Set **Repository access**
 +
 **All repositories**: allow access to your repositories including read-only public repos.
 
-. Give it the following permissions:
+.. Give it the following permissions:
 +
 **Commit statuses**: Read-Only
 +
@@ -419,20 +339,25 @@ image::github-clone.png[GitHub Repo Clone, 400]
 .GitHub Repo Perms
 image::github-repo-perms.png[GitHub Repo Perms, 400]
 
-. Generate the token.
+.. Generate the token.
 +
 .GitHub Repo Token
 image::github-pat.png[GitHub Repo Token, 400]
 
-. Done ✅
+.. Done ✅
 
-Add MCP GitHub
-The configuration is very similar to what we did for enable MCP OpenShift earlier.
+. **Add MCP GitHub**
+
+[NOTE]
+====
+The configuration is very similar to what we did for add MCP:OpenShift tool earlier.
 For this lab, we’ve already deployed the pod that runs the mcp::github functions.
+====
 
-Now, we need to edit the LlamaStack ConfigMap to add tool runtime and tool group.
+. Edit the LlamaStack ConfigMap to add MCP:GitHub tool.
 
-. We add in the tool group. Notice that the URI for the MCP Server uses Server Sent Events (/sse).
+. Add in the tool group.
+
 +
 [source,yaml,options="wrap"]
 ----
@@ -442,8 +367,12 @@ Now, we need to edit the LlamaStack ConfigMap to add tool runtime and tool group
       mcp_endpoint:
         uri: http://github-mcp-server.agent-demo.svc.cluster.local:80/sse
 ----
++
 
-. Try this prompt instead using the same settings **MCP Servers openshift**, **ReAct agent** and **Llama4 model**
+[NOTE]
+====
+Notice that the URI for the MCP Server uses Server Sent Events (/sse).
+====
 
 . Refresh the playground in the browser. Select the **Tools** playground with the **MCP Servers github** and **Regular agent**. Try the prompt (replace the github user with your user).
 +
