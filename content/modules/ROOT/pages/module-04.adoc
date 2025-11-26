@@ -223,7 +223,7 @@ image::react-agent.png[ReAct Agent, 600]
 
 Model Context Protocol (MCP) is a popular standard for tool discovery and execution. It allows tools to be dynamically discovered from an MCP endpoint and can be used to extend the agent’s capabilities.
 
-For this lab, we've already deployed the pod that runs the https://github.com/containers/kubernetes-mcp-server[**mcp::openshift**,window=_blank] functions. However, we need to configure LlamaStack to use the MCP tool that interacts with the OpenShift cluster. MCP servers are configured similarly to the websearch tool.
+For this lab, we've already deployed the pod that runs the https://github.com/containers/kubernetes-mcp-server[**mcp::openshift**,window=_blank] functions that interact with the OpenShift cluster. However, we need to configure LlamaStack to use this MCP tool.
 
 
 We need to edit the LlamaStack ConfigMap to add tool runtime and tool group.
@@ -284,9 +284,17 @@ list pods using in the mcp-openshift namespace
 
 === LlamaStack mcp::github
 
-The last MCP Server we need to deploy https://github.com/github/github-mcp-server[interacts with GitHub,window=_blank]. First, we need to enable access to our github repo so MCP GitHub tool can interact with it.
 
-. **Set up your shared repository**
+In the previous section, we used MCP servers that were already provisioned for us. In this section, we'll:
+
+* Enable access to GitHub repo
+* Deploy https://github.com/github/github-mcp-server[GitHub server,window=_blank]
+* Enable it in LlamaStack
+* Use it in the Playground
+
+First, we need to enable access to our github repo so MCP GitHub tool can interact with it.
+
+. **Set up your repository**
 .. https://github.com/rhpds/etx-agentic-ai-gitops[Fork the etx-agentic-ai repository,window=_blank] to your personal GitHub account
 +
 .GitHub Repo Fork
@@ -297,17 +305,6 @@ image::github-fork.png[GitHub Repo Fork, 400]
 +
 .GitHub Repo Enable Issues
 image::github-repo-enable-issues.png[GitHub Repo Enable Issues, 400]
-+
-. **Clone the repository**
-.. If you're running the lab using your laptop, you can clone the repository locally to your laptop.
-+
-[source,bash,options="wrap",role="execute"]
-----
-git clone git@github.com:your-gh-user/etx-agentic-ai-gitops.git
-cd etx-agentic-ai-gitops
-----
-+
-image::github-clone.png[GitHub Repo Clone, 400]
 +
 
 . **Setup GitHub Token**
@@ -344,14 +341,136 @@ image::github-repo-perms.png[GitHub Repo Perms, 400]
 .GitHub Repo Token
 image::github-pat.png[GitHub Repo Token, 400]
 
+[TIP]
+====
+Save the token for easy access as you'll need to use it later in the lab.
+====
+
+
+. **Clone the repository**
+.. If you're running the lab using your laptop, you can clone the repository locally to your laptop.
++
+[source,bash,options="wrap",role="execute"]
+----
+git clone git@github.com:your-gh-user/etx-agentic-ai-gitops.git
+cd etx-agentic-ai-gitops
+----
++
+image::github-clone.png[GitHub Repo Clone, 400]
++
+
+
 .. Done ✅
 
-. **Add MCP GitHub**
+. **Deploy MCP GitHub Server**
+
+.. In the OpenShift Console, choose project <userx>.llama-stack) and navigate to Workloads -> Secrets.
+
+.. Click on *Create* (from YAML)
+
++
+[source,yaml,options="wrap"]
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-credentials-v1
+  namespace: userX-llama-stack
+type: Opaque
+stringData:
+  # Add your PAT here
+  # Important: not for production use, demo purposes only
+  token: <YOUR_GITHUB_PERSONAL_ACCESS_TOKEN>
+----
++
+
+[TIP]
+====
+Update namespace and your GitHub personal access token you had created earlier
+====
+
+.. In the OpenShift Console, continuing with project <userx>.llama-stack), navigate to Workloads -> Deployments.
+
+.. Click on *Create* and choose YAML view
+
++
+[source,yaml,options="wrap"]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-mcp-server
+  namespace: userX-llama-stack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: github-mcp-server
+  template:
+    metadata:
+      labels:
+        app: github-mcp-server
+    spec:
+      containers:
+      - name: github-mcp-server
+        image: quay.io/eformat/github-mcp-server:latest
+        imagePullPolicy: Always
+        command: ["/usr/local/bin/start-server.sh"]
+        ports:
+        - containerPort: 8080
+        env:
+        - name: GITHUB_PERSONAL_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: github-credentials-v1
+              key: token
+        resources:
+          limits:
+            memory: "512Mi"
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+----
++
+
+[TIP]
+====
+Update namespace
+====
+
+
+.. In the OpenShift Console, continuing with project <userx>.llama-stack), navigate to Networking -> Services.
+
+.. Click on *Create Service*
+
++
+[source,yaml,options="wrap"]
+----
+apiVersion: v1
+kind: Service
+metadata:
+  name: github-mcp-server
+  namespace: userX-llama-stack
+spec:
+  selector:
+    app: github-mcp-server
+  ports:
+  - port: 80
+    targetPort: 8080
+----
++
+
+[TIP]
+====
+Update namespace
+====
+
++
+. **Enable mcp::github in LlamaStack**
 
 [NOTE]
 ====
 The configuration is very similar to what we did for add MCP:OpenShift tool earlier.
-For this lab, we’ve already deployed the pod that runs the mcp::github functions.
 ====
 
 . Edit the LlamaStack ConfigMap to add MCP:GitHub tool.
@@ -391,6 +510,24 @@ image::llama-playground-mcp-github-chat.png[LlamaStack MCP GitHub, 800]
 +
 image::llamastack-playground-mcp-github-tools.png[LlamaStack MCP OpenShift tool list, 800]
 
+. *Create a GitHub issue*
+
++
+.. Try this prompt (replace the github user with your user).
++
+[source,bash,options="wrap",role="execute"]
+----
+Create a github issue for a fake error in the ${YOUR_GITHUB_USER}/etx-agentic-ai repo and assign it to ${YOUR_GITHUB_USER}.
+----
++
+image::playground-github-issue.png[LlamaStack Playground Github issue prompt, 800]
++
+
+.. Confirm that the issue has been created in your repo
+
++
+image::github-issue.png[Github issue, 800]
++
 
 . Done ✅
 
@@ -399,11 +536,7 @@ image::llamastack-playground-mcp-github-tools.png[LlamaStack MCP OpenShift tool 
 
 LlamaStack integrates with the Observability stack we deployed as part of the bootstrap. The observability stack has a lot of moving parts. Traces are sent from LlamaStack via OTEL to a Tempo sink endpoint. We can then view traces in OpenShift using the Observe > Traces dashboard.
 
-. To configure telemetry on our LlamaStack server, edit the file https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/applications/llama-stack/overlay/policy-generator-config.yaml[**infra/applications/llama-stack/overlay/policy-generator-config.yaml**,window=_blank] to point to the **sno/** folder. This is the final configuration for our use case.
-+
-image::llama-stack-sno.png[LlamaStack Telemetry, 300]
-
-. Checking the base ConfigMap shows the telemetry stanza with the service name, sinks and the OTEL Tracing endpoint which is set as an environment variable on the Deployment
+. Edit the LlamaStack ConfigMap to add telemetry stanza with the service name, sinks and the OTEL Tracing endpoint which is set as an environment variable on the Deployment
 +
 [source,yaml,options="wrap"]
 ----
@@ -415,14 +548,6 @@ image::llama-stack-sno.png[LlamaStack Telemetry, 300]
           sinks: ${env.TELEMETRY_SINKS:=console, sqlite, otel_metric, otel_trace}
           otel_exporter_otlp_endpoint: ${env.OTEL_EXPORTER_OTLP_ENDPOINT:=}
           sqlite_db_path: ${env.SQLITE_DB_PATH:=~/.llama/distributions/remote-vllm/trace_store.db}
-----
-
-. Check these files into git
-+
-[source,bash,options="wrap",role="execute"]
-----
-# Its not real unless its in git
-git add .; git commit -m "deploy llama-stack with telemetry"; git push
 ----
 
 . Refresh the playground in the browser. Select the Tools playground and select websearch, the MCP github Server and MCP OpenShift tool, ReAct agent and Llama4 model. Try out some of the previous prompting that include Tool calls to generate some traces.
@@ -489,309 +614,3 @@ Total models: 4
 ----
 
 . Done ✅
-
-=== Using the DataScienceCluster Resource to configure the LlamaStack Operator
-
-This section is for information only and should be supported in 2.23+ of RHOAI.
-
-[NOTE]
-====
-**VERSION 2.22 DOES NOT HAVE USERCONFIG MAP OVERRIDE SO DO NOT USE DSC YET - SCHEDULED FOR 2.23 **
-
-With the latest version of RHOAI 2.22.0+ we can use the built in DSC (Data Science Cluster) mechanism to deploy the operator.
-
-. Ensure the DataScienceCluster resource has the **llamastackoperator** component as **Managed**
-
-. First, navigate to the correct project via
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc project agent-demo
-----
-
-. Check the DataScienceCluster resource
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc get dsc -o yaml
-----
-
-. Finally, review the DataScienceCluster resource to ensure the **llamastackoperator** component is set to **Managed**
-+
-[source,yaml,options="wrap"]
-----
-apiVersion: datasciencecluster.opendatahub.io/v1
-kind: DataScienceCluster
-metadata:
-  name: default-dsc
-spec:
-  components:
-    ...
-    llamastackoperator:
-      managementState: Managed
-    ...
-status: {}
-----
-
-. Check the LlamaStack controller manager pod is running in the **redhat-ods-applications** Namespace
-+
-image::llama-stack-controller-manager.png[LlamaStack Controller Manager Pod, 800]
-====
-
-=== (Optional) Bonus Extension Exercise
-
-⛷️ For the adventurous who like to go off-piste. Try to configure the RAG tool in LlamaStack and LlamaStack Playground using https://milvus.io/[milvus,window=_blank] as the vector store provider. ⛷️
-
-[TIP]
-====
-We have left some code that is commented out and undeployed to help you get to the bottom of the ski run. Good Luck 🫡
-
-- https://github.com/redhat-ai-services/etx-agentic-ai/tree/main/infra/applications/milvus[milvus,window=_blank] standalone application
-- https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/app-of-apps/sno/milvus.yaml.undeploy[milvus app-of-apps,window=_blank] undeployed
-- https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/applications/llama-stack/base/configmap.yaml#L105-L113[vector-io,window=_blank] LlamaStack configuration
-- https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/applications/llama-stack/base/configmap.yaml#L95-L96[rag provider,window=_blank] LlamaStack configuration
-- https://github.com/redhat-ai-services/etx-agentic-ai/blob/main/infra/applications/llama-stack/base/configmap.yaml#L125-L126[built-in rag toolgroup,window=_blank] LlamaStack configuration
-- https://docs.redhat.com/en/documentation/red_hat_openshift_ai_cloud_service/1/html/working_with_rag/working-with-llama-stack_rag[Red Hat LlamaStack product documentation,window=_blank]
-- https://github.com/opendatahub-io/llama-stack-demos[RedHat LlamaStack demo,window=_blank] repository from product documentation
-====
-
-== Using LlamaStack Playground for Use Case prompting
-
-Use the Playground for our actual Use Case prompting (requires pipeline failure pods). We can try out various prompts to see what works best. Here are some examples - you will need to change the pod name.
-
-=== Search for pod logs
-
-- Model: **llama-4-scout-17b-16e-w4a16**
-- Agent Type: **ReAct**
-- Tools: **mcp::openshift**
-+
-Query the namespace pod for a pod error; copy-paste search for solution to error logs
-+
-Try this prompt (replace the pod name for the **java-app-build-run-bad-** in your **demo-pipeline** namespace)
-+
-[source,bash,options="wrap",role="execute"]
-----
-Review the OpenShift logs for the pod 'java-app-build-run-bad-7rdzn-build-pod', in the 'demo-pipeline' namespace.
-----
-+
-image::playground-prompt-1.png[LlamaStack Traces, 800]
-+
-The agent reasoned correctly about the need to format the tool call with a container name as well
-+
-Try this prompt (replace the pod name for the **java-app-build-run-bad-** in your **demo-pipeline** namespace)
-+
-[source,bash,options="wrap",role="execute"]
-----
-Review the OpenShift logs for the container 'step-s2i-build' in pod 'java-app-build-run-bad-7rdzn-build-pod', in the 'demo-pipeline' namespace.
-----
-+
-image::playground-prompt-2.png[LlamaStack Traces, 800]
-+
-Supplying the container name means less agent turns, less error prone
-
-=== Search for pod logs and websearch error summary
-
-- Model: **llama-4-scout-17b-16e-w4a16**
-- Agent Type: **ReAct**
-- Tools: **mcp::openshift, websearch**
-+
-Try this prompt (replace the pod name for the **java-app-build-run-bad-** in your **demo-pipeline** namespace)
-+
-[source,bash,options="wrap",role="execute"]
-----
-Review the OpenShift logs for the container 'step-s2i-build' in pod 'java-app-build-run-bad-7rdzn-build-pod', in the 'demo-pipeline' namespace. If the logs indicate an error search for the top OpenShift solution. Create a summary message with the category and explanation of the error.
-----
-+
-image::playground-prompt-3.png[LlamaStack Traces, 800]
-+
-image::playground-prompt-4.png[LlamaStack Traces, 800]
-+
-The Agent retrieved the pod logs and performed a websearch
-+
-Compare the results to the actual pod logs.
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc -n demo-pipeline -c step-s2i-build logs java-app-build-run-bad-7rdzn-build-pod
-----
-
-=== Create a GitHub issue
-
-- Model: **llama-4-scout-17b-16e-w4a16**
-- Agent Type: **ReAct**
-- Tools: **mcp::github**
-+
-Create a GitHub issue, add add issue comments
-+
-Try this prompt (replace the github user with your user).
-+
-[source,bash,options="wrap",role="execute"]
-----
-Create a github issue for a fake error in the ${YOUR_GITHUB_USER}/etx-agentic-ai repo and assign it to ${YOUR_GITHUB_USER}.
-----
-+
-image::playground-prompt-5.png[LlamaStack Traces, 800]
-+
-This fails due to parsing json arrays as strings. Try this prompt (replace **YOUR_GITHUB_USER** with your user).
-+
-[source,bash,options="wrap",role="execute"]
-----
-Create a github issue using these parameters {"name":"create_issue","arguments":{"owner":"${YOUR_GITHUB_USER}","repo":"etx-agentic-ai","title":"Fake Error: Agentic AI Service Unresponsive","body":"The Agentic AI service is not responding. This is a fake error report."}}} DO NOT add any optional parameters.
-----
-+
-image::playground-prompt-6.png[LlamaStack Traces, 800]
-+
-This is successful but may take a few turns to get the tool call right
-+
-image::playground-prompt-8.png[LlamaStack Traces, 800]
-
-=== Create the Final Prompt
-
-- Model: **llama-4-scout-17b-16e-w4a16**
-- Agent Type: **ReAct**
-- Tools: **mcp::openshift, mcp::github**
-+
-Prompt engineering; let's try and create a prompt that chains together the different tasks together, analyze the pod logs then generate a github issue 🍺 Try this prompt (replace **YOUR_GITHUB_USER** with your user, replace the pod name for the **java-app-build-run-bad-** in your **demo-pipeline** namespace)
-+
-[source,bash,options="wrap",role="execute"]
-----
-You are an expert OpenShift administrator. Your task is to analyze pod logs, summarize the error, and generate a JSON object to create a GitHub issue for tracking. Follow the format in the examples below.
-
----
-EXAMPLE 1:
-Input: The logs for pod 'frontend-v2-abcde' in namespace 'webapp' show: ImagePullBackOff: Back-off pulling image 'my-registry/frontend:latest'.
-
-Output:
-The pod is in an **ImagePullBackOff** state. This means Kubernetes could not pull the container image 'my-registry/frontend:latest', likely due to an incorrect image tag or authentication issues.
-{"name":"create_issue","arguments":{"owner":"${YOUR_GITHUB_USER}","repo":"etx-agentic-ai","title":"Issue with Etx pipeline","body":"### Cluster/namespace location\\nwebapp/frontend-v2-abcde\\n\\n### Summary of the problem\\nThe pod is failing to start due to an ImagePullBackOff error.\\n\\n### Detailed error/code\\nImagePullBackOff: Back-off pulling image 'my-registry/frontend:latest'\\n\\n### Possible solutions\\n1. Verify the image tag 'latest' exists in the 'my-registry/frontend' repository.\\n2. Check for authentication errors with the image registry."}}
-
----
-EXAMPLE 2:
-Input: The logs for pod 'data-processor-xyz' in namespace 'pipelines' show: CrashLoopBackOff. Last state: OOMKilled.
-
-Output:
-The pod is in a **CrashLoopBackOff** state because it was **OOMKilled**. The container tried to use more memory than its configured limit.
-{"name":"create_issue","arguments":{"owner":"${YOUR_GITHUB_USER}","repo":"etx-agentic-ai","title":"Issue with Etx pipeline","body":"### Cluster/namespace location\\npipelines/data-processor-xyz\\n\\n### Summary of the problem\\nThe pod is in a CrashLoopBackOff state because it was OOMKilled (Out of Memory).\\n\\n### Detailed error/code\\nCrashLoopBackOff, Last state: OOMKilled\\n\\n### Possible solutions\\n1. Increase the memory limit in the pod's deployment configuration.\\n2. Analyze the application for memory leaks."}}
----
-
-NOW, YOUR TURN:
-
-Input: Review the OpenShift logs for the container 'step-s2i-build' for the pod 'java-app-build-run-bad-7rdzn-build-pod' in the 'demo-pipeline' namespace. If the logs indicate an error, search for the solution, create a summary message with the category and explanation of the error, and create a Github issue using {"name":"create_issue","arguments":{"owner":"${YOUR_GITHUB_USER}","repo":"etx-agentic-ai","title":"Issue with Etx pipeline","body":"<summary of the error>"}}. DO NOT add any optional parameters.
-
-ONLY tail the last 10 lines of the pod, no more.
-The JSON object formatted EXACTLY as outlined above.
-----
-+
-The final prompt linking pod log errors and github
-+
-video::final-prompt.webm[type=video/webm, 600]
-+
-image::playground-prompt-9.png[LlamaStack Traces, 800]
-+
-And the GitHub issue successfully created 🏆
-
-. Done ✅
-
-
-
-// lightbox - for images - FIXME need to make the include::partial$lightbox.hbs WORK
-++++
-<div id="myModal" class="modal">
-    <span class="close cursor" onclick="closeModal()">&times;</span>
-    <div class="modal-content" onclick="closeModal()">
-        <!--suppress HtmlRequiredAltAttribute as this will be set when selecting the image via JavaScript,
-        RequiredAttributes as src will be set by when selecting the image via JavaScript -->
-        <img id="imageinmodal">
-    </div>
-</div>
-<script>
-    function openModal() {
-        document.getElementById("myModal").style.display = "block";
-        // use overflowY = hidden to prevent the body from scrolling when modal is visible
-        // doesn't work with overscroll-behavior, as this would work only when the modal has a scrollbar
-        document.getElementsByTagName("body")[0].style.overflowY = "hidden";
-    }
-
-    function closeModal() {
-        document.getElementById("myModal").style.display = "none";
-        document.getElementsByTagName("body")[0].style.overflowY = "auto";
-    }
-
-    document.querySelectorAll('.imageblock img').forEach(element => {
-        if (element.closest('a') === null) {
-            element.className += " lightbox";
-            element.addEventListener('click', evt => {
-                document.getElementById("imageinmodal").setAttribute("src", evt.currentTarget.getAttribute("src"))
-                document.getElementById("imageinmodal").setAttribute("alt", evt.currentTarget.getAttribute("alt"))
-                openModal();
-            })
-        }
-    });
-</script>
-<style>
-    /* The Modal (background) */
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 10;
-        padding-top: 5vh;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        backdrop-filter: blur(3px);
-        background-color: rgba(30, 30, 30, 0.8);
-    }
-    img.lightbox {
-        cursor: pointer;
-    }
-    /* Modal Content */
-    .modal-content {
-        position: relative;
-        margin: auto;
-        padding: 0;
-        width: 90%;
-        max-height: 90vh;
-        cursor: pointer;
-    }
-
-    .modal-content img {
-        width: auto;
-        height: auto;
-        max-width: 90vw;
-        max-height: 90vh;
-        min-width: 90vw;
-        min-height: 90vh;
-        display: block;
-        margin-right: auto;
-        margin-left: auto;
-        object-fit: contain;
-    }
-
-    /* The Close Button */
-    .close {
-        color: white;
-        position: absolute;
-        top: 10px;
-        right: 25px;
-        font-size: 35px;
-        font-weight: bold;
-    }
-
-    .close:hover,
-    .close:focus {
-        color: #999;
-        text-decoration: none;
-        cursor: pointer;
-    }
-</style>
-++++
-
-== Artifacts to carry forward
-
-* Selected model and endpoint details (Playground URL, model id)
-* Finalized system prompt and example user prompts used in Playground
-* Tooling decisions (builtin websearch enabled, MCP servers registered)
-* Any safety/guardrail parameters you validated
-* Notes/screenshots of successful Playground runs
