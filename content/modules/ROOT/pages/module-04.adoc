@@ -32,15 +32,18 @@ https://llama-stack.readthedocs.io/en/latest/[LlamaStack,window=_blank] is the o
 
 === Interacting with LlamaStack
 
-. Install the **llama-stack-client** - either in a notebook, or from your jumphost - ideally we match client and server versions
+. Configure the **llama-stack-client** in your showroom terminal.
 
 +
 [source,bash,options="wrap",role="execute"]
 ----
-pip install llama-stack-client==0.2.15
+llama-stack-client configure
+
+// TODO
+http://llamastack-with-config-service.user1-llama-stack.svc.cluster.local:8321
+no key
 ----
 +
-WARNING: If you are doing this with an older version of python (3.11 or less) you may not be able to install the matching version. Run using this instead **pip install llama-stack-client fire**
 
 . Login to OpenShift if you are not already logged in
 +
@@ -49,19 +52,6 @@ WARNING: If you are doing this with an older version of python (3.11 or less) yo
 oc login --server=https://api.${CLUSTER_NAME}.${BASE_DOMAIN}:6443 -u admin -p ${ADMIN_PASSWORD}
 ----
 
-. Port forward the LlamaStack port so we can connect to it (in a workbench you can use the Service as the **--endpoint** argument or just **oc login** and then port-forward)
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc -n <username>-llama-stack port-forward svc/llamastack-with-config-service 8321:8321 2>&1>/dev/null &
-----
-+
-[IMPORTANT]
-====
-You will need to restart this port-forward every time the LlamaStack pod restarts.
-
-Each new change to the LlamaStack ConfigMap (overlay path in the policy generator) causes the LlamaStack pod to restart. So keep the port-forward command handy in your history as you will need it!.
-====
 
 . Check the connection by listing the version - ideally we match client and server versions
 +
