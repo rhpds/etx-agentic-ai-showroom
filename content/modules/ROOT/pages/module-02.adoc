@@ -56,10 +56,10 @@ We'll be creating a LlamaStack Distribution custom resource (CR) to define how a
 
 There is a unique instance of LlamaStack distribution deployed for each lab user.
 
-. Locate the LlamaStack distribution.
-+
-image::llamastackdistribution-search.png[LlamaStack distribution, 800]
-+
+// . Locate the LlamaStack distribution.
+// +
+// image::llamastackdistribution-search.png[LlamaStack distribution, 800]
+// +
 
 . Click on the existing distribution.
 +
