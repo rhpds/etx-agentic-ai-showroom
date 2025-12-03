@@ -1,5 +1,7 @@
 = Lab Setup and Prerequisites
 
+include::vars.adoc[]
+
 [NOTE]
 ====
 Persona: Platform Engineer (primary). Also relevant: AI Engineer.

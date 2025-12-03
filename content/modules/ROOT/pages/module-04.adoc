@@ -1,5 +1,7 @@
 = Evaluation and Observability
 
+include::vars.adoc[]
+
 [NOTE]
 ====
 Persona: AI Engineer (primary). Also relevant: SRE/Platform Engineer.
