@@ -3,23 +3,12 @@
 == Modules
 
 * xref:module-01.adoc[01 - Introduction & Overview] (15m): Use case and solution overview
-* xref:module-02.adoc[02 - Initial Exploration] (15m): Explore lab environment
-* xref:module-04.adoc[04 - Using Llama Stack] (60m): Deploy Llama Stack, Playground, refine prompts
-* xref:module-05.adoc[05 - From Playground to Prototype] (60–90m): Codify agent in Workbench, create issue
-* xref:module-06.adoc[06 - From Prototype to App] (60–90m): Deploy agent service, pipeline trigger, MTTR
-* xref:module-07.adoc[07 - Agent Evaluation] (30m): Evaluation, guardrails, traces
-* xref:module-08.adoc[08 - Rolling out the Agent] (45–60m): Hardening, observability, promotion
-* xref:module-09.adoc[09 - Retrospective and Improvements] (30–45m): Discussion and next steps
+* xref:module-02.adoc[02 - Using Llama Stack] (60m): Deploy Llama Stack, Playground, refine prompts
+* xref:module-03.adoc[03 - From Prototype to App] (60–90m): Build and deploy agent service, pipeline trigger, MTTR
+* xref:module-04.adoc[04 - Rolling out the Agent] (45–60m): Hardening, observability, promotion
 
 == Prerequisites
 
 * **GitHub Account**: You'll need access to fork repositories
-* **Git CLI**: Installed and configured on your local machine
-* **OpenShift CLI (oc)**: Download from https://mirror.openshift.com/pub/openshift-v4/clients/ocp/[OpenShift client downloads,window=_blank]
-* **jq**: Command-line JSON processor for parsing command outputs
-* **Python 3**: Provides `json.tool` for pretty-printing JSON
-* **envsubst (gettext)**: For environment variable substitution in manifests
-* **Terminal/Command Line**: Bash shell with basic utilities (openssl, curl)
+* **Tavily Search Key**: Sign up at tavily.com for a free API key
 * **Web Browser**: For accessing OpenShift console and documentation
-
-

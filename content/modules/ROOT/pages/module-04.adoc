@@ -1,606 +1,265 @@
-= Using Llama Stack
+= Evaluation and Observability
 
 [NOTE]
 ====
-Persona: AI Engineer (primary). Also relevant: Platform Engineer.
+Persona: AI Engineer (primary). Also relevant: SRE/Platform Engineer.
 ====
 
 [IMPORTANT]
-.In this section [Needs update]
+.In this module
 ====
-We are going to look at the details of LlamaStack server configuration. Along the way we will use the LlamaStack playground UI as a test client and show how to configure providers, models and MCP servers.
-
-In the final section we will use the playground to develop our Use Case specific prompts.
+Learn a practical, high-level flow to combine agent evaluation with observability so you can measure, understand, and improve behavior over time.
 ====
 
 [NOTE]
 ====
-Estimated time: 60–90 minutes
+Estimated time: 15-20 minutes
 ====
 
-== What you'll do
-
-* Interact with Llama Stack & Playground
-* Register built-in/MCP tools
-* Develop and refine prompts in Playground
-* Capture configuration and decisions for later modules
-
-
-== LlamaStack
-
-https://llama-stack.readthedocs.io/en/latest/[LlamaStack,window=_blank] is the open-source framework for building generative AI applications. We are going to deploy LlamaStack distribution and then take a look around using the client CLI and the playground UI.
-
-=== Interacting with LlamaStack
-
-. Configure the **llama-stack-client** in your showroom terminal.
-
-+
-[source,bash,options="wrap",role="execute"]
-----
-llama-stack-client configure
-
-// TODO
-http://llamastack-with-config-service.user1-llama-stack.svc.cluster.local:8321
-no key
-----
-+
-
-. Login to OpenShift if you are not already logged in
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc login --server=https://api.${CLUSTER_NAME}.${BASE_DOMAIN}:6443 -u admin -p ${ADMIN_PASSWORD}
-----
-
-
-. Check the connection by listing the version - ideally we match client and server versions
-+
-[source,bash,options="wrap",role="execute"]
-----
-llama-stack-client inspect version
-----
-+
-[source,bash,options="wrap"]
-----
-INFO:httpx:HTTP Request: GET http://localhost:8321/v1/version "HTTP/1.1 200 OK"
-VersionInfo(version='0.2.15')
-----
-
-. If you need help with the client commands, take a look at
-+
-[source,bash,options="wrap",role="execute"]
-----
-llama-stack-client --help
-----
-
-. Now list the providers - this should match what we have configured so far i.e. Tavily Web Search, Inference and agents
-+
-[source,bash,options="wrap",role="execute"]
-----
-llama-stack-client providers list
-----
-+
-[source,bash,options="wrap"]
-----
-INFO:httpx:HTTP Request: GET http://localhost:8321/v1/providers "HTTP/1.1 200 OK"
-┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ API          ┃ Provider ID    ┃ Provider Type          ┃
-┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ inference    │ vllm           │ remote::vllm           │
-│ tool_runtime │ tavily-search  │ remote::tavily-search  │
-│ agents       │ meta-reference │ inline::meta-reference │
-└──────────────┴────────────────┴────────────────────────┘
-
-----
-
-. Check the LlamaStack OpenAPI docs at http://localhost:8321/docs
-+
-image::llama-stack-api-docs.png[LlamaStack API Docs, 800]
-+
-TIP: Browsing will not work in a workbench
-
-. Now list the models
-+
-[source,bash,options="wrap",role="execute"]
-----
-llama-stack-client models list
-----
-+
-[source,bash,options="wrap"]
-----
-INFO:httpx:HTTP Request: GET http://localhost:8321/v1/models "HTTP/1.1 200 OK"
-
-Available Models
-
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ model_type                   ┃ identifier                                               ┃ provider_resource_id                                     ┃ metadata               ┃ provider_id                   ┃
-┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ llm                          │ granite-31-2b-instruct                                   │ granite-31-2b-instruct                                   │                        │ vllm                          │
-└──────────────────────────────┴──────────────────────────────────────────────────────────┴──────────────────────────────────────────────────────────┴────────────────────────┴───────────────────────────────┘
-
-Total models: 1
-
-----
-. Done ✅
-
-=== Playground: LlamaStack User Interface
-
-LlamaStack comes with a simple UI called Playground. For this lab, a Playground instance is already deployed for each user.
-
-. Checkout the Playground pod.
-+
-image::llamastack-playground-pod.png[LlamaStack Playground Pod, 800]
-+
-
-. Click on the route for this pod to access the Playground.
-+
-image::llamastack-playground-route.png[LlamaStack Playground Route, 800]
-+
-
-. Here is the Playground, GUI for interacting with LlamaStack services.
-+
-image::llama-stack-playground2.png[LlamaStack Playground UI, 800]
-
-. Let's first Chat with the LLM by asking a question such as:
-+
-[source,bash,options="wrap",role="execute"]
-----
-What is LlamaStack ?
-----
-
-+
-image::llama-stack-playground-hello.png[LlamaStack Playground Hello, 800]
-+
-
-[NOTE]
-Playground calls the **/v1/chat/completion** endpoint that we can find in the OpenAI docs for the vLLM served model.
-
-. Now, let's ask LLM a question for which it lacks information (e.g. real time data):
-
-+
-[source,bash,options="wrap",role="execute"]
-----
-What is the weather today in Brisbane ?
-----
-+
-image::llamastack-playground-no-websearch.png[LlamaStack Playground without websearch, 800]
-
-
-. In order to find the realtime information, the LLM needs to call a tool like websearch. We also need to specify what type of agent to call. Let's select the **Regular** agent to call the Tool.
-
-+
-image::llamastack-playground-websearch.png[LlamaStack Playground with websearch, 800]
-
-. Now, let's ask LLM the same question again:
-
-+
-[source,bash,options="wrap",role="execute"]
-----
-What is the weather today in Brisbane ?
-----
-The LLM is now able to the answer with realtime data provided by the websearch tool.
-
-+
-image::llamastack-playground-websearch-regular.png[LlamaStack Playground regular websearch, 800]
-
-+
-In summary, here is the workflow with a Regular agent.
-+
-image::agent.png[Agent workflow, 600]
-
-
-
-. Now lets try out the **ReAct** agent to call the tool with the same prompt:
-+
-[source,bash,options="wrap",role="execute"]
-----
-What is the weather today in Brisbane ?
-----
-+
-Notice that the agent first Reasons - where the LLM thinks about the data or tool results, Acts - where the LLM performs an action, LLM then Observes the result of the tool call, before returning the result.
-+
-image::llamastack-playground-websearch-react.png[LlamaStack Websearch ReAct Agent, 800]
-
-+
-In summary, here is the workflow with a ReAct agent.
-+
-image::react-agent.png[ReAct Agent, 600]
-
-. Done ✅
-
-
-=== LlamaStack mcp::openshift
-
-Model Context Protocol (MCP) is a popular standard for tool discovery and execution. It allows tools to be dynamically discovered from an MCP endpoint and can be used to extend the agent’s capabilities.
-
-For this lab, we've already deployed the pod that runs the https://github.com/containers/kubernetes-mcp-server[**mcp::openshift**,window=_blank] functions that interact with the OpenShift cluster. However, we need to configure LlamaStack to use this MCP tool.
-
-
-We need to edit the LlamaStack ConfigMap to add tool runtime and tool group.
-
-. Search for your namespace (userx-llama-stack), click on ConfigMaps and select llama-stack-config file.
-
-+
-image::llamastack-configmap-location.png[LlamaStack ConfigMap location, 800]
-
-
-. Click on YAML tab.
-
-+
-image::llamastack-configmap.png[LlamaStack ConfigMap, 800]
-
-. Now, we'll add the tool runtime for MCP:
-+
-[source,yaml,options="wrap"]
-----
-      tool_runtime:
-      - provider_id: model-context-protocol
-        provider_type: remote::model-context-protocol
-        config: {}
-----
-
-. Next, we will add the tool group
-+
-[source,yaml,options="wrap"]
-----
-    tool_groups:
-    - toolgroup_id: mcp::openshift
-      provider_id: model-context-protocol
-      mcp_endpoint:
-        uri: http://ocp-mcp-server.mcp-openshift.svc.cluster.local:8000/sse
-----
-
-. Refresh the playground in the browser. Select the **Tools** playground with the **MCP Servers openshift** and expand tools from.
-
-+
-image::llamastack-playground-mcp-openshift.png[LlamaStack MCP OpenShift tool, 800]
-
-. Checkout the list of actions that can performed by MCP:OpenShift tools.
-
-+
-image::llamastack-playground-mcp-openshift-tools.png[LlamaStack MCP OpenShift tool list, 800]
-
-
-. Select **Regular agent** and try the prompt:
-+
-[source,bash,options="wrap",role="execute"]
-----
-list pods using in the mcp-openshift namespace
-----
-
-. Try different agents and prompts. Not all of them work all of the time. This is a common problem with Tool calling and LLMs.
-
-. Done ✅
-
-=== LlamaStack mcp::github
-
-
-In the previous section, we used MCP servers that were already provisioned for us. In this section, we'll:
-
-* Enable access to GitHub repo
-* Deploy https://github.com/github/github-mcp-server[GitHub server,window=_blank]
-* Enable it in LlamaStack
-* Use it in the Playground
-
-First, we need to enable access to our github repo so MCP GitHub tool can interact with it.
-
-. **Set up your repository**
-.. https://github.com/rhpds/etx-agentic-ai-gitops[Fork the etx-agentic-ai repository,window=_blank] to your personal GitHub account
-+
-.GitHub Repo Fork
-image::github-fork.png[GitHub Repo Fork, 400]
-+
-
-.. Ensure that you **Enable Issues** for your fork under **Settings** > **General** > **Features** > **Issues** as they are disabled for forked repos by default
-+
-.GitHub Repo Enable Issues
-image::github-repo-enable-issues.png[GitHub Repo Enable Issues, 400]
-+
-
-. **Setup GitHub Token**
-
-.. Create a fine-grained GitHub Personal Access (PAT) Token.
-
-.. Login to GitHub in a browser, then click on your user icon > **Settings**
-
-.. Select **Developer Settings** > **Personal Access Tokens** > **Fine-grained personal access tokens**
-
-.. Select Button **Generate a new token** - give it a token name e.g. __etx-ai__
-
-.. Set **Repository access**
-+
-**All repositories**: allow access to your repositories including read-only public repos.
-
-.. Give it the following permissions:
-+
-**Commit statuses**: Read-Only
-+
-**Content**: Read-Only
-+
-**Issues**: Read and Write
-+
-**Metadata**: Read-Only (this gets added automatically)
-+
-**Pull requests**: Read-Only
-+
-.GitHub Repo Perms
-image::github-repo-perms.png[GitHub Repo Perms, 400]
-
-.. Generate the token.
-+
-.GitHub Repo Token
-image::github-pat.png[GitHub Repo Token, 400]
-
-[TIP]
-====
-Save the token for easy access as you'll need to use it later in the lab.
-====
-
-
-. **Clone the repository**
-.. If you're running the lab using your laptop, you can clone the repository locally to your laptop.
-+
-[source,bash,options="wrap",role="execute"]
-----
-git clone git@github.com:your-gh-user/etx-agentic-ai-gitops.git
-cd etx-agentic-ai-gitops
-----
-+
-image::github-clone.png[GitHub Repo Clone, 400]
-+
-
-
-.. Done ✅
-
-. **Deploy MCP GitHub Server**
-
-.. In the OpenShift Console, choose project <userx>.llama-stack) and navigate to Workloads -> Secrets.
-
-.. Click on *Create* (from YAML)
-
-+
-[source,yaml,options="wrap"]
-----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: github-credentials-v1
-  namespace: userX-llama-stack
-type: Opaque
-stringData:
-  # Add your PAT here
-  # Important: not for production use, demo purposes only
-  token: <YOUR_GITHUB_PERSONAL_ACCESS_TOKEN>
-----
-+
-
-[TIP]
-====
-Update namespace and your GitHub personal access token you had created earlier
-====
-
-.. In the OpenShift Console, continuing with project <userx>.llama-stack), navigate to Workloads -> Deployments.
-
-.. Click on *Create* and choose YAML view
-
-+
-[source,yaml,options="wrap"]
-----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: github-mcp-server
-  namespace: userX-llama-stack
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: github-mcp-server
-  template:
-    metadata:
-      labels:
-        app: github-mcp-server
-    spec:
-      containers:
-      - name: github-mcp-server
-        image: quay.io/eformat/github-mcp-server:latest
-        imagePullPolicy: Always
-        command: ["/usr/local/bin/start-server.sh"]
-        ports:
-        - containerPort: 8080
-        env:
-        - name: GITHUB_PERSONAL_ACCESS_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: github-credentials-v1
-              key: token
-        resources:
-          limits:
-            memory: "512Mi"
-          requests:
-            cpu: "200m"
-            memory: "256Mi"
-----
-+
-
-[TIP]
-====
-Update namespace
-====
-
-
-.. In the OpenShift Console, continuing with project <userx>.llama-stack), navigate to Networking -> Services.
-
-.. Click on *Create Service*
-
-+
-[source,yaml,options="wrap"]
-----
-apiVersion: v1
-kind: Service
-metadata:
-  name: github-mcp-server
-  namespace: userX-llama-stack
-spec:
-  selector:
-    app: github-mcp-server
-  ports:
-  - port: 80
-    targetPort: 8080
-----
-+
-
-[TIP]
-====
-Update namespace
-====
-
-+
-. **Enable mcp::github in LlamaStack**
+== What you'll do...stretch goals!
+
+* Plan evaluation scenarios and acceptance criteria
+* Run evaluations and capture outputs, tool calls, and reasoning traces
+* Instrument the service to emit logs/metrics/traces that align to evaluation steps
+* Add guardrails/safety toggles and observe impact in both eval results and signals
+* Establish dashboards/alerts to continuously monitor the same signals
+
+== Flow overview
+
+1. Define what “good” looks like for your agent (correctness, stability, latency, tool success)
+2. Evaluate with representative prompts/tasks; record outputs and intermediate steps
+3. Observe service-level signals (logs, metrics, traces) during the same runs
+4. Compare results against criteria; identify where behavior or performance falls short
+5. Tweak prompts, tools, or guardrails; re-run to verify improvements
+6. Keep dashboards and alerts keyed to the same signals used in evaluation
+
+== Success criteria
+
+* The agent produces consistent answers across N repeated runs for a fixed prompt (tolerance defined by your team)
+* Tool-call failures/timeouts trend downward after guardrail/safety changes
+* Latency and error rates meet targets; traces show fewer retries and faster resolutions
+* Approximate MTTR improvement: measure time from failure detection to GitHub issue creation before and after the finally step
+
+Open up the following notebook in your workspace.
+
+
+// lightbox - for images - FIXME need to make the include::partial$lightbox.hbs WORK
+++++
+<div id="myModal" class="modal">
+    <span class="close cursor" onclick="closeModal()">&times;</span>
+    <div class="modal-content" onclick="closeModal()">
+        <!--suppress HtmlRequiredAltAttribute as this will be set when selecting the image via JavaScript,
+        RequiredAttributes as src will be set by when selecting the image via JavaScript -->
+        <img id="imageinmodal">
+    </div>
+</div>
+<script>
+    function openModal() {
+        document.getElementById("myModal").style.display = "block";
+        // use overflowY = hidden to prevent the body from scrolling when modal is visible
+        // doesn't work with overscroll-behavior, as this would work only when the modal has a scrollbar
+        document.getElementsByTagName("body")[0].style.overflowY = "hidden";
+    }
+
+    function closeModal() {
+        document.getElementById("myModal").style.display = "none";
+        document.getElementsByTagName("body")[0].style.overflowY = "auto";
+    }
+
+    document.querySelectorAll('.imageblock img').forEach(element => {
+        if (element.closest('a') === null) {
+            element.className += " lightbox";
+            element.addEventListener('click', evt => {
+                document.getElementById("imageinmodal").setAttribute("src", evt.currentTarget.getAttribute("src"))
+                document.getElementById("imageinmodal").setAttribute("alt", evt.currentTarget.getAttribute("alt"))
+                openModal();
+            })
+        }
+    });
+</script>
+<style>
+    /* The Modal (background) */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 10;
+        padding-top: 5vh;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        backdrop-filter: blur(3px);
+        background-color: rgba(30, 30, 30, 0.8);
+    }
+    img.lightbox {
+        cursor: pointer;
+    }
+    /* Modal Content */
+    .modal-content {
+        position: relative;
+        margin: auto;
+        padding: 0;
+        width: 90%;
+        max-height: 90vh;
+        cursor: pointer;
+    }
+
+    .modal-content img {
+        width: auto;
+        height: auto;
+        max-width: 90vw;
+        max-height: 90vh;
+        min-width: 90vw;
+        min-height: 90vh;
+        display: block;
+        margin-right: auto;
+        margin-left: auto;
+        object-fit: contain;
+    }
+
+    /* The Close Button */
+    .close {
+        color: white;
+        position: absolute;
+        top: 10px;
+        right: 25px;
+        font-size: 35px;
+        font-weight: bold;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: #999;
+        text-decoration: none;
+        cursor: pointer;
+    }
+</style>
+++++
+
+== Production Hardening and Promotion (Optional)
 
 [NOTE]
 ====
-The configuration is very similar to what we did for add MCP:OpenShift tool earlier.
+Persona: SRE/Platform Engineer (primary). Also relevant: AI Engineer.
 ====
-
-. Edit the LlamaStack ConfigMap to add MCP:GitHub tool.
-
-. Add in the tool group.
-
-+
-[source,yaml,options="wrap"]
-----
-    tool_groups:
-    - toolgroup_id: mcp::github
-      provider_id: model-context-protocol
-      mcp_endpoint:
-        uri: http://github-mcp-server.agent-demo.svc.cluster.local:80/sse
-----
-+
 
 [NOTE]
 ====
-Notice that the URI for the MCP Server uses Server Sent Events (/sse).
+Estimated time: 45–60 minutes (Optional)
 ====
 
-. Refresh the playground in the browser. Select the **Tools** playground with the **MCP Servers github** and **Regular agent**. Try the prompt (replace the github user with your user).
-+
-[source,bash,options="wrap",role="execute"]
-----
-List the branches from ${YOUR_GITHUB_USER}/etx-agentic-ai-gitops repo.
-----
-+
-image::llama-playground-mcp-github-chat.png[LlamaStack MCP GitHub, 800]
-+
+== Before you begin
 
-. Try different agents and prompts. Not all of them work all of the time. This is a common problem with Tool calling and LLMs
+Make sure the following are completed from earlier modules:
 
-. Checkout the list of actions that can performed by MCP:github tools.
+* Cluster is bootstrapped and healthy (OpenShift GitOps and Agentic Argo CD reachable)
+* Vault is initialized, unsealed, and you exported `ROOT_TOKEN` and `UNSEAL_KEY`
+* Secrets have been hydrated into Vault (Agentic Argo CD showing healthy secret integration)
+* Your fork is configured with PAT and webhook to Argo CD
+* Tools installed: `oc`, `vault`, `jq`, `envsubst`, `python3`
+* Optional: If using MaaS, export the `MODEL_*` environment variables
 
-+
-image::llamastack-playground-mcp-github-tools.png[LlamaStack MCP OpenShift tool list, 800]
+== What you'll do...stretch goals!
 
-. *Create a GitHub issue*
+* Add observability (logs/metrics/traces), readiness/liveness/startup probes
+* Apply configuration policies and security posture (image signing, NetworkPolicies, Secrets)
+* Define promotion flows (dev→stage→prod), environment parity checks, and rollback strategy
+* Introduce safer rollouts (blue/green or canary), capacity planning, and autoscaling
 
-+
-.. Try this prompt (replace the github user with your user).
-+
-[source,bash,options="wrap",role="execute"]
-----
-Create a github issue for a fake error in the ${YOUR_GITHUB_USER}/etx-agentic-ai repo and assign it to ${YOUR_GITHUB_USER}.
-----
-+
-image::playground-github-issue.png[LlamaStack Playground Github issue prompt, 800]
-+
-
-.. Confirm that the issue has been created in your repo
-
-+
-image::github-issue.png[Github issue, 800]
-+
-
-. Done ✅
+== Deploy the hardening and promotion assets
 
 
-=== LlamaStack Observability
+// lightbox - for images - FIXME need to make the include::partial$lightbox.hbs WORK
+++++
+<div id="myModal" class="modal">
+    <span class="close cursor" onclick="closeModal()">&times;</span>
+    <div class="modal-content" onclick="closeModal()">
+        <!--suppress HtmlRequiredAltAttribute as this will be set when selecting the image via JavaScript,
+        RequiredAttributes as src will be set by when selecting the image via JavaScript -->
+        <img id="imageinmodal">
+    </div>
+</div>
+<script>
+    function openModal() {
+        document.getElementById("myModal").style.display = "block";
+        // use overflowY = hidden to prevent the body from scrolling when modal is visible
+        // doesn't work with overscroll-behavior, as this would work only when the modal has a scrollbar
+        document.getElementsByTagName("body")[0].style.overflowY = "hidden";
+    }
 
-LlamaStack integrates with the Observability stack we deployed as part of the bootstrap. The observability stack has a lot of moving parts. Traces are sent from LlamaStack via OTEL to a Tempo sink endpoint. We can then view traces in OpenShift using the Observe > Traces dashboard.
+    function closeModal() {
+        document.getElementById("myModal").style.display = "none";
+        document.getElementsByTagName("body")[0].style.overflowY = "auto";
+    }
 
-. Edit the LlamaStack ConfigMap to add telemetry stanza with the service name, sinks and the OTEL Tracing endpoint which is set as an environment variable on the Deployment
-+
-[source,yaml,options="wrap"]
-----
-      telemetry:
-      - provider_id: meta-reference
-        provider_type: inline::meta-reference
-        config:
-          service_name: ${env.OTEL_SERVICE_NAME:=llama-stack}
-          sinks: ${env.TELEMETRY_SINKS:=console, sqlite, otel_metric, otel_trace}
-          otel_exporter_otlp_endpoint: ${env.OTEL_EXPORTER_OTLP_ENDPOINT:=}
-          sqlite_db_path: ${env.SQLITE_DB_PATH:=~/.llama/distributions/remote-vllm/trace_store.db}
-----
+    document.querySelectorAll('.imageblock img').forEach(element => {
+        if (element.closest('a') === null) {
+            element.className += " lightbox";
+            element.addEventListener('click', evt => {
+                document.getElementById("imageinmodal").setAttribute("src", evt.currentTarget.getAttribute("src"))
+                document.getElementById("imageinmodal").setAttribute("alt", evt.currentTarget.getAttribute("alt"))
+                openModal();
+            })
+        }
+    });
+</script>
+<style>
+    /* The Modal (background) */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 10;
+        padding-top: 5vh;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        backdrop-filter: blur(3px);
+        background-color: rgba(30, 30, 30, 0.8);
+    }
+    img.lightbox {
+        cursor: pointer;
+    }
+    /* Modal Content */
+    .modal-content {
+        position: relative;
+        margin: auto;
+        padding: 0;
+        width: 90%;
+        max-height: 90vh;
+        cursor: pointer;
+    }
 
-. Refresh the playground in the browser. Select the Tools playground and select websearch, the MCP github Server and MCP OpenShift tool, ReAct agent and Llama4 model. Try out some of the previous prompting that include Tool calls to generate some traces.
-+
-image::llama-stack-traces1.png[LlamaStack Traces, 800]
-+
-image::llama-stack-traces2.png[LlamaStack Traces, 800]
+    .modal-content img {
+        width: auto;
+        height: auto;
+        max-width: 90vw;
+        max-height: 90vh;
+        min-width: 90vw;
+        min-height: 90vh;
+        display: block;
+        margin-right: auto;
+        margin-left: auto;
+        object-fit: contain;
+    }
 
-. Done ✅
+    /* The Close Button */
+    .close {
+        color: white;
+        position: absolute;
+        top: 10px;
+        right: 25px;
+        font-size: 35px;
+        font-weight: bold;
+    }
 
-=== LlamaStack Configured
-
-. Check the completed LlamaStack configuration
-+
-[source,bash,options="wrap",role="execute"]
-----
-llama-stack-client providers list
-----
-+
-[source,bash,options="wrap"]
-----
-INFO:httpx:HTTP Request: GET http://localhost:8321/v1/providers "HTTP/1.1 200 OK"
-┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ API          ┃ Provider ID            ┃ Provider Type                  ┃
-┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ scoring      │ basic                  │ inline::basic                  │
-│ scoring      │ llm-as-judge           │ inline::llm-as-judge           │
-│ agents       │ meta-reference         │ inline::meta-reference         │
-│ inference    │ vllm                   │ remote::vllm                   │
-│ inference    │ vllm-llama-3-2-3b      │ remote::vllm                   │
-│ inference    │ vllm-llama-4-guard     │ remote::vllm                   │
-│ inference    │ sentence-transformers  │ inline::sentence-transformers  │
-│ tool_runtime │ model-context-protocol │ remote::model-context-protocol │
-│ tool_runtime │ brave-search           │ remote::brave-search           │
-│ tool_runtime │ tavily-search          │ remote::tavily-search          │
-│ telemetry    │ meta-reference         │ inline::meta-reference         │
-└──────────────┴────────────────────────┴────────────────────────────────┘
-----
-+
-[source,bash,options="wrap",role="execute"]
-----
-llama-stack-client models list
-----
-+
-[source,bash,options="wrap"]
-----
-INFO:httpx:HTTP Request: GET http://localhost:8321/v1/models "HTTP/1.1 200 OK"
-
-Available Models
-
-┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ model_type      ┃ identifier                                                         ┃ provider_resource_id                    ┃ metadata                                    ┃ provider_id                  ┃
-┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ llm             │ vllm/granite-31-2b-instruct                                        │ granite-31-2b-instruct                  │                                             │ vllm                         │
-├─────────────────┼────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────┼─────────────────────────────────────────────┼──────────────────────────────┤
-│ llm             │ vllm-llama-3-2-3b/llama-3-2-3b                                     │ llama-3-2-3b                            │                                             │ vllm-llama-3-2-3b            │
-├─────────────────┼────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────┼─────────────────────────────────────────────┼──────────────────────────────┤
-│ llm             │ vllm-llama-4-guard/llama-4-scout-17b-16e-w4a16                     │ llama-4-scout-17b-16e-w4a16             │                                             │ vllm-llama-4-guard           │
-├─────────────────┼────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────┼─────────────────────────────────────────────┼──────────────────────────────┤
-│ embedding       │ sentence-transformers/all-MiniLM-L6-v2                             │ all-MiniLM-L6-v2                        │ {'embedding_dimension': 384.0}              │ sentence-transformers        │
-└─────────────────┴────────────────────────────────────────────────────────────────────┴─────────────────────────────────────────┴─────────────────────────────────────────────┴──────────────────────────────┘
-
-Total models: 4
-----
-
-. Done ✅
+    .close:hover,
+    .close:focus {
+        color: #999;
+        text-decoration: none;
+        cursor: pointer;
+    }
+</style>
+++++
