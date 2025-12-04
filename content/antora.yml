@@ -1,6 +1,6 @@
 name: modules
 title: ETX Agentic AI
-version: main
+version: master
 nav:
   - modules/ROOT/nav.adoc
 
@@ -9,7 +9,7 @@ start_page: ROOT:index.adoc
 asciidoc:
   attributes:
     lab_name: "I'm the lab_name var"
-    release-version: main
+    release-version: master
     page-pagination: true
 
     guid: khvvw
