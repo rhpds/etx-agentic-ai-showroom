@@ -267,7 +267,7 @@ image::llamastack-playground-mcp-openshift-tools.png[LlamaStack MCP OpenShift to
 +
 [source,bash,options="wrap",role="execute"]
 ----
-list pods using in the mcp-openshift namespace
+list pods in the mcp-openshift namespace
 ----
 
 . Try different agents and prompts. Not all of them work all of the time. This is a common problem with Tool calling and LLMs.
@@ -476,7 +476,7 @@ The configuration is very similar to what we did for add MCP:OpenShift tool earl
     - toolgroup_id: mcp::github
       provider_id: model-context-protocol
       mcp_endpoint:
-        uri: http://github-mcp-server.agent-demo.svc.cluster.local:80/sse
+        uri: http://github-mcp-server:80/sse
 ----
 +
 
