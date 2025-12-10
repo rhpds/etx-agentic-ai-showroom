@@ -532,14 +532,20 @@ LlamaStack integrates with the Observability stack we deployed as part of the bo
 +
 [source,yaml,options="wrap"]
 ----
-      telemetry:
-      - provider_id: meta-reference
-        provider_type: inline::meta-reference
-        config:
-          service_name: ${env.OTEL_SERVICE_NAME:=llama-stack}
-          sinks: ${env.TELEMETRY_SINKS:=console, sqlite, otel_metric, otel_trace}
-          otel_exporter_otlp_endpoint: ${env.OTEL_EXPORTER_OTLP_ENDPOINT:=}
-          sqlite_db_path: ${env.SQLITE_DB_PATH:=~/.llama/distributions/remote-vllm/trace_store.db}
+apis:
+...
+- telemetry
+
+providers:
+...
+  telemetry:
+  - provider_id: meta-reference
+    provider_type: inline::meta-reference
+    config:
+      service_name: "${env.OTEL_SERVICE_NAME:=}"
+      sinks: ${env.TELEMETRY_SINKS:=console}
+      otel_exporter_otlp_endpoint: ${env.OTEL_EXPORTER_OTLP_ENDPOINT:=}
+      sqlite_db_path: /opt/app-root/src/.llama/distributions/rh/trace_store.db
 ----
 
 . Refresh the playground in the browser. Select the Tools playground and select websearch, the MCP github Server and MCP OpenShift tool, ReAct agent and Llama4 model. Try out some of the previous prompting that include Tool calls to generate some traces.
