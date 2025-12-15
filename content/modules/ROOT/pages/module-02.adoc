@@ -41,7 +41,7 @@ https://llama-stack.readthedocs.io/en/latest/[LlamaStack,window=_blank] is the o
 ----
 llama-stack-client configure
 
-http://llamastack-with-config-service.{etx_agentic_ai_username}-llama-stack.svc.cluster.local:8321
+http://{etx_agentic_ai_username}-llama-stack-service.{etx_agentic_ai_username}-llama-stack.svc.cluster.local:8321
 
 no key
 ----
