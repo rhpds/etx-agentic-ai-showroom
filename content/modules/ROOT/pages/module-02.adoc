@@ -41,8 +41,8 @@ https://llama-stack.readthedocs.io/en/latest/[LlamaStack,window=_blank] is the o
 ----
 llama-stack-client configure
 
-// TODO
-http://llamastack-with-config-service.user1-llama-stack.svc.cluster.local:8321
+http://llamastack-with-config-service.{etx_agentic_ai_username}-llama-stack.svc.cluster.local:8321
+
 no key
 ----
 +
@@ -220,7 +220,7 @@ For this lab, we've already deployed the pod that runs the https://github.com/co
 
 We need to edit the LlamaStack ConfigMap to add tool runtime and tool group.
 
-. Search for your namespace (userx-llama-stack), click on ConfigMaps and select llama-stack-config file.
+. Search for your namespace ({etx_agentic_ai_username}-llama-stack), click on ConfigMaps and select llama-stack-config file.
 
 +
 image::llamastack-configmap-location.png[LlamaStack ConfigMap location, 800]
@@ -301,9 +301,7 @@ image::github-repo-enable-issues.png[GitHub Repo Enable Issues, 400]
 
 . **Setup GitHub Token**
 
-.. Create a fine-grained GitHub Personal Access (PAT) Token.
-
-.. Login to GitHub in a browser, then click on your user icon > **Settings**
+.. Click on your user icon > **Settings**
 
 .. Select **Developer Settings** > **Personal Access Tokens** > **Fine-grained personal access tokens**
 
@@ -311,7 +309,7 @@ image::github-repo-enable-issues.png[GitHub Repo Enable Issues, 400]
 
 .. Set **Repository access**
 +
-**All repositories**: allow access to your repositories including read-only public repos.
+**Select repositories**: allow access to the repository you forked above.
 
 .. Give it the following permissions:
 +
@@ -356,7 +354,7 @@ image::github-clone.png[GitHub Repo Clone, 400]
 
 . **Deploy MCP GitHub Server**
 
-.. In the OpenShift Console, choose project <userx>.llama-stack) and navigate to Workloads -> Secrets.
+.. In the OpenShift Console, choose project ({etx_agentic_ai_username}.llama-stack) and navigate to Workloads -> Secrets.
 
 .. Click on *Create* (from YAML)
 
@@ -367,7 +365,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: github-credentials-v1
-  namespace: userX-llama-stack
+  namespace: {etx_agentic_ai_username}-llama-stack
 type: Opaque
 stringData:
   # Add your PAT here
@@ -381,7 +379,7 @@ stringData:
 Update namespace and your GitHub personal access token you had created earlier
 ====
 
-.. In the OpenShift Console, continuing with project <userx>.llama-stack), navigate to Workloads -> Deployments.
+.. In the OpenShift Console, continuing with project {etx_agentic_ai_username}.llama-stack), navigate to Workloads -> Deployments.
 
 .. Click on *Create* and choose YAML view
 
@@ -392,7 +390,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: github-mcp-server
-  namespace: userX-llama-stack
+  namespace: {etx_agentic_ai_username}-llama-stack
 spec:
   replicas: 1
   selector:
@@ -431,7 +429,7 @@ Update namespace
 ====
 
 
-.. In the OpenShift Console, continuing with project <userx>.llama-stack), navigate to Networking -> Services.
+.. In the OpenShift Console, continuing with project {etx_agentic_ai_username}.llama-stack), navigate to Networking -> Services.
 
 .. Click on *Create Service*
 
@@ -442,7 +440,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: github-mcp-server
-  namespace: userX-llama-stack
+  namespace: {etx_agentic_ai_username}-llama-stack
 spec:
   selector:
     app: github-mcp-server
