@@ -211,6 +211,106 @@ image::react-agent.png[ReAct Agent, 600]
 . Done ✅
 
 
+=== LlamaStack Distribution
+
+We'll be creating a LlamaStack Distribution custom resource (CR) to define how a LlamaStack server should be deployed. It allows you to specify:
+
+* **Server Configuration**: Which distribution to use (Ollama, vLLM, etc.)
+* **Container Specifications**: Port, environment variables, resource limits
+
+There is a unique instance of LlamaStack distribution deployed for each lab user.
+
+// . Locate the LlamaStack distribution.
+// +
+// image::llamastackdistribution-search.png[LlamaStack distribution, 800]
+// +
+
+. Click on the existing distribution.
++
+image::llamastackdistribution-current.png[LlamaStack distribution current, 800]
++
+
+. Click on the YAML tab
++
+image::llamastackdistribution-tab.png[LlamaStack distribution tab, 800]
++
+
+. Check out the LlamaStack Distribution we're using for this lab.
+
+image::llamastackdistribution-yaml.png[LlamaStack distribution YAML, 800]
+
+You will observe that we've specify the secrets for the services that'll be interacting with LlamaStack server:
+
+* [1] MaaS API
+* [2] Tavily search API.
+
+Also listed is the user configuration used with this distribution (ConfigMap: llama-stack-config).
+
+=== LlamaStack ConfigMap
+
+A ConfigMap can be used to store run.yaml configuration for each LlamaStack distribution. Updates to the ConfigMap will restart the Pod to load the new data.
+
+Example to create a run.yaml ConfigMap
+
+[source,yaml,options="wrap"]
+----
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: llama-stack-config
+  namespace: {{ .Values.username }}-llama-stack
+data:
+  run.yaml: |
+    # Llama Stack configuration
+    version: '2'
+    image_name: vllm
+    apis:
+    - inference
+    - tool_runtime
+    - agents
+    - safety
+    - vector_io
+    models:
+      - metadata: {}
+        model_id: {{ .Values.defaultModel.name }}
+        provider_id: vllm-{{ .Values.defaultModel.name }}
+        provider_model_id: {{ .Values.defaultModel.name }}
+        model_type: llm
+    providers:
+      inference:
+      - provider_id: vllm-{{ .Values.defaultModel.name }}
+        provider_type: "remote::vllm"
+        config:
+          url: {{ .Values.defaultModel.url }}
+          context_length: 4096
+          api_token: ${env.DEFAULT_MODEL_API_TOKEN}
+          tls_verify: true
+      tool_runtime:
+      - provider_id: tavily-search
+        provider_type: remote::tavily-search
+        config:
+          api_key: ${env.TAVILY_API_KEY}
+          max_results: 3
+      agents:
+      - provider_id: meta-reference
+        provider_type: inline::meta-reference
+        config:
+          persistence_store:
+            type: sqlite
+            db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/starter}/agents_store.db
+          responses_store:
+            type: sqlite
+            db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/starter}/responses_store.db
+    tools:
+      - name: builtin::websearch
+        enabled: true
+    tool_groups:
+    - provider_id: tavily-search
+      toolgroup_id: builtin::websearch
+    server:
+      port: 8321
+----
+
 === LlamaStack mcp::openshift
 
 Model Context Protocol (MCP) is a popular standard for tool discovery and execution. It allows tools to be dynamically discovered from an MCP endpoint and can be used to extend the agent’s capabilities.

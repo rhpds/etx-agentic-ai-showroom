@@ -1,14 +1,34 @@
-  = Course Overview
+= ETX AI Super Lab 2 (Agentic AI)
 
-== Modules
+== Lab Overview
 
-* xref:module-01.adoc[01 - Introduction & Overview] (15m): Use case and solution overview
-* xref:module-02.adoc[02 - Using Llama Stack] (60m): Deploy Llama Stack, Playground, refine prompts
-* xref:module-03.adoc[03 - From Prototype to App] (60–90m): Build and deploy agent service, pipeline trigger, MTTR
-* xref:module-04.adoc[04 - Rolling out the Agent] (45–60m): Hardening, observability, promotion
+This lab illustrates how agentic AI can be applied to help solve a real-world business problem. You will explore basic agentic AI capabilities and deploy an end-to-end agentic AI solution.
 
-== Prerequisites
+By the end of this workshop, participants will have:
 
-* **GitHub Account**: You'll need access to fork repositories
-* **Tavily Search Key**: Sign up at tavily.com for a free API key
-* **Web Browser**: For accessing OpenShift console and documentation
+* ✅ A fully functional AI agent that can autonomously handle CI/CD failures
+* ✅ Understanding of agent development lifecycle and deployment
+* ✅ Experience with observability and evaluation of AI systems
+* ✅ Practical knowledge of integrating AI agents into real-world workflows
+
+== Timetable
+
+This is a tentative timetable for the materials that will be presented.
+
+[width="90%",cols="3,^2,10",options="header"]
+|=========================================================
+| Name |Duration |Description
+
+|1. Introduction & Overview |15m
+a| Use case and solution overview
+
+|2. Using Llama Stack |60m
+a| Deploy Llama Stack, Playground, refine prompts
+
+|3. From Prototype to App |60-90m
+a| Build and deploy agent service, pipeline trigger, MTTR
+
+|4. Rolling out the Agent |45-60m
+a| Hardening, observability, promotion
+
+|=========================================================
