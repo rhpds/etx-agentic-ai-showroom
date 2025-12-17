@@ -6,7 +6,6 @@ include::vars.adoc[]
 
 Before starting this lab, ensure you have the following:
 
-
 === Required Skills
 * **Basic Git Knowledge**: Cloning repositories, basic version control concepts
 * **Command Line Basics**: Navigating directories, running commands
@@ -19,7 +18,7 @@ Before starting this lab, ensure you have the following:
 * **GitHub Account**: You'll need access to fork repositories and collaborate
 * **Tavily search token**: Gather your Tavily web search API Key.
 
-. Setup a https://app.tavily.com[Tavily,window=_blank] api key for web search. Login using a github account of one of your team members.
+. Set up a https://app.tavily.com[Tavily,window=_blank] api key for web search. Log in using a Github account of one of your team members.
 +
 .Tavily API Key
 image::tavily-apikey.png[Create Tavily API Key, 600]
@@ -27,7 +26,7 @@ image::tavily-apikey.png[Create Tavily API Key, 600]
 
 == Cluster Environment
 
-You have now access to a fully-featured OpenShift cluster with **Red Hat OpenShift AI (RHOAI)**, which provides a number of AI-related platform features including Llama Stack https://github.com/llamastack/llama-stack[Llama Stack,window=_blank], a composable framework that provides standardized APIs for model inference, safety guardrails, and tool integration. This allows our AI agents to seamlessly interact with large language models while maintaining consistent interfaces for memory management, tool calling, and safety controls across different model providers.
+You have now access to a fully-featured OpenShift cluster with **Red Hat OpenShift AI (RHOAI)**, which provides a number of AI-related platform features including https://github.com/llamastack/llama-stack[Llama Stack,window=_blank], a composable framework that provides standardized APIs for model inference, safety guardrails, and tool integration. This allows our AI agents to seamlessly interact with large language models while maintaining consistent interfaces for memory management, tool calling, and safety controls across different model providers.
 
 === Components
 

@@ -1,4 +1,9 @@
-* xref:module-01-01.adoc[1. Introduction & Overview]
-* xref:module-02.adoc[2. Using Llama Stack]
-* xref:module-03.adoc[3. From Prototype to App]
-* xref:module-04.adoc[4. Hardening, observability, promotion]
+* 1. Introduction & Overview
+** xref:module-01-01.adoc[1.1 Setting the Stage]
+** xref:module-01-02.adoc[1.2 Lab Setup and Prerequisites]
+* 2. Using Llama Stack
+** xref:module-02.adoc[2. Using Llama Stack]
+* 3. From Prototype to App
+** xref:module-03.adoc[3. From Prototype to App]
+* 4. Hardening, Observability, Promotion
+** xref:module-04.adoc[4. Hardening, observability, promotion]

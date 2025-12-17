@@ -1,4 +1,4 @@
-= Setting The Stage
+= Setting the Stage
 
 == The Use Case
 
