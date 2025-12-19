@@ -168,62 +168,21 @@ What is the weather today in Brisbane ?
 image::llamastack-playground-no-websearch.png[LlamaStack Playground without websearch, 800]
 
 
-. In order to find the realtime information, the LLM needs to call a tool like websearch. We also need to specify what type of agent to call. Let's select the **Regular** agent to call the Tool.
+. In order to find the realtime information, the LLM needs to call a tool like websearch. Let's dive into how to configure Llama Stack and set up access for the websearch tool.
 
-+
-image::llamastack-playground-websearch.png[LlamaStack Playground with websearch, 800]
+=== Llama Stack Distribution
 
-. Now, let's ask LLM the same question again:
+As part of OpenShift AI, Llama Stack instances are represented by LlamaStack Distribution custom resources (CR) that defines the Llama Stack server configuration including:
 
-+
-[source,bash,options="wrap",role="execute"]
-----
-What is the weather today in Brisbane ?
-----
-The LLM is now able to the answer with realtime data provided by the websearch tool.
-
-+
-image::llamastack-playground-websearch-regular.png[LlamaStack Playground regular websearch, 800]
-
-+
-In summary, here is the workflow with a Regular agent.
-+
-image::agent.png[Agent workflow, 600]
-
-
-
-. Now lets try out the **ReAct** agent to call the tool with the same prompt:
-+
-[source,bash,options="wrap",role="execute"]
-----
-What is the weather today in Brisbane ?
-----
-+
-Notice that the agent first Reasons - where the LLM thinks about the data or tool results, Acts - where the LLM performs an action, LLM then Observes the result of the tool call, before returning the result.
-+
-image::llamastack-playground-websearch-react.png[LlamaStack Websearch ReAct Agent, 800]
-
-+
-In summary, here is the workflow with a ReAct agent.
-+
-image::react-agent.png[ReAct Agent, 600]
-
-. Done ✅
-
-
-=== LlamaStack Distribution
-
-We'll be creating a LlamaStack Distribution custom resource (CR) to define how a LlamaStack server should be deployed. It allows you to specify:
-
-* **Server Configuration**: Which distribution to use (Ollama, vLLM, etc.)
+* **Server Configuration**: Which distribution to use (including built-in tools etc.)
 * **Container Specifications**: Port, environment variables, resource limits
 
 There is a unique instance of LlamaStack distribution deployed for each lab user.
 
-// . Locate the LlamaStack distribution.
-// +
-// image::llamastackdistribution-search.png[LlamaStack distribution, 800]
-// +
+. Locate the LlamaStack distribution.
++
+image::llamastackdistribution-search.png[LlamaStack distribution, 800]
++
 
 . Click on the existing distribution.
 +
@@ -239,18 +198,18 @@ image::llamastackdistribution-tab.png[LlamaStack distribution tab, 800]
 
 image::llamastackdistribution-yaml.png[LlamaStack distribution YAML, 800]
 
-You will observe that we've specify the secrets for the services that'll be interacting with LlamaStack server:
+You will observe that we've specified the secrets for the services that'll be interacting with the Llama Stack server:
 
 * [1] MaaS API
-* [2] Tavily search API.
+* [2] Tavily search API. We will update this API key later.
 
-Also listed is the user configuration used with this distribution (ConfigMap: llama-stack-config).
+Also listed is the user configuration used with this distribution (ConfigMap: llama-stack-config). Let's review this configuration before updating the Tavily search key.
 
 === LlamaStack ConfigMap
 
-A ConfigMap can be used to store run.yaml configuration for each LlamaStack distribution. Updates to the ConfigMap will restart the Pod to load the new data.
+A ConfigMap can be used to store run.yaml configuration for each Llama Stack distribution. Updates to the ConfigMap will restart the Pod to load the new data.
 
-Example to create a run.yaml ConfigMap
+Example run.yaml:
 
 [source,yaml,options="wrap"]
 ----
@@ -310,6 +269,77 @@ data:
     server:
       port: 8321
 ----
+
+Let's now create our own Tavily key and update the Llama Stack distribution to use this key for our websearch tool calls.
+
+**Tavily search token**: Gather your Tavily web search API Key.
+
+. Set up a https://app.tavily.com[Tavily,window=_blank] api key for web search. Log in using a Github account of one of your team members.
++
+.Tavily API Key
+image::tavily-apikey.png[Create Tavily API Key, 600]
+
+. Create a new secret object using this specification while replacing the PLACEHOLDER with your Tavily key.
+
+[source,yaml,options="wrap"]
+----
+kind: Secret
+apiVersion: v1
+metadata:
+  name: new-tavily-search-key
+  namespace: {etx_agentic_ai_username}-llama-stack
+stringData:
+  tavily-search-api-key: PLACEHOLDER
+type: Opaque
+----
+
+. Now update the Llama Stack distribution to reference this new secret instead of the old one.
+
+. Let's now try out the websearch tool! Navigate back to the Llama Stack Playground UI.
+
+. In the left menu, choose `Tools`. Select the built-in `websearch` tool. We also need to specify what type of agent to call. Let's select the **Regular** agent to call the tool.
+
++
+image::llamastack-playground-websearch.png[LlamaStack Playground with websearch, 800]
+
+. Now, let's ask LLM the same question again:
+
++
+[source,bash,options="wrap",role="execute"]
+----
+What is the weather today in Brisbane ?
+----
+The LLM is now able to the answer with realtime data provided by the websearch tool.
+
++
+image::llamastack-playground-websearch-regular.png[LlamaStack Playground regular websearch, 800]
+
++
+In summary, here is the workflow with a Regular agent.
++
+image::agent.png[Agent workflow, 600]
+
+
+
+. Now lets try out the **ReAct** agent to call the tool with the same prompt:
++
+[source,bash,options="wrap",role="execute"]
+----
+What is the weather today in Brisbane ?
+----
++
+Notice that the agent first Reasons - where the LLM thinks about the data or tool results, Acts - where the LLM performs an action, LLM then Observes the result of the tool call, before returning the result.
++
+image::llamastack-playground-websearch-react.png[LlamaStack Websearch ReAct Agent, 800]
+
++
+In summary, here is the workflow with a ReAct agent.
++
+image::react-agent.png[ReAct Agent, 600]
+
+. Done ✅
+
+
 
 === LlamaStack mcp::openshift
 

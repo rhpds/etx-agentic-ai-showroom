@@ -6,6 +6,9 @@ include::vars.adoc[]
 
 Before starting this lab, ensure you have the following:
 
+=== Required Tools
+* **GitHub Account**: You'll need access to fork repositories and collaborate
+
 === Required Skills
 * **Basic Git Knowledge**: Cloning repositories, basic version control concepts
 * **Command Line Basics**: Navigating directories, running commands
@@ -13,15 +16,6 @@ Before starting this lab, ensure you have the following:
 
 === Provided by Instructors
 * **Support**: Technical assistance throughout the lab
-
-=== Required Tools
-* **GitHub Account**: You'll need access to fork repositories and collaborate
-* **Tavily search token**: Gather your Tavily web search API Key.
-
-. Set up a https://app.tavily.com[Tavily,window=_blank] api key for web search. Log in using a Github account of one of your team members.
-+
-.Tavily API Key
-image::tavily-apikey.png[Create Tavily API Key, 600]
 
 
 == Cluster Environment
