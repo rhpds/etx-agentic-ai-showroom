@@ -172,7 +172,7 @@ image::llamastack-playground-no-websearch.png[LlamaStack Playground without webs
 
 === Llama Stack Distribution
 
-As part of OpenShift AI, Llama Stack instances are represented by LlamaStack Distribution custom resources (CR) that defines the Llama Stack server configuration including:
+As part of OpenShift AI, a Llama Stack instance is represented by the LlamaStackDistribution custom resource (CR) that defines the Llama Stack server configuration including:
 
 * **Server Configuration**: Which distribution to use (including built-in tools etc.)
 * **Container Specifications**: Port, environment variables, resource limits
@@ -196,18 +196,52 @@ image::llamastackdistribution-tab.png[LlamaStack distribution tab, 800]
 
 . Check out the LlamaStack Distribution we're using for this lab.
 
-image::llamastackdistribution-yaml.png[LlamaStack distribution YAML, 800]
+[source,yaml]
+----
+apiVersion: llamastack.io/v1alpha1
+kind: LlamaStackDistribution
+metadata:
+  name: user1-llama-stack
+  namespace: user1-llama-stack
+spec:
+  replicas: 1
+  server:
+    containerSpec:
+      env:
+        - name: TELEMETRY_SINKS
+          value: 'console, sqlite, otel_trace, otel_metric'
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: 'http://otel-collector-collector.observability-hub.svc.cluster.local:4318'
+        - name: OTEL_SERVICE_NAME
+          value: user1-llamastack
+        - name: DEFAULT_MODEL_API_TOKEN   # [1]
+          valueFrom:
+            secretKeyRef:
+              key: apiKey
+              name: granite-3-2-8b-instruct
+        - name: TAVILY_API_KEY            # [2]
+          valueFrom:
+            secretKeyRef:
+              key: tavily-search-api-key
+              name: tavily-search-key
+      name: llama-stack
+      port: 8321
+    distribution:
+      name: rh-dev
+    userConfig:                           # [3]
+      configMapName: llama-stack-config
+----
 
 You will observe that we've specified the secrets for the services that'll be interacting with the Llama Stack server:
 
 * [1] MaaS API
 * [2] Tavily search API. We will update this API key later.
 
-Also listed is the user configuration used with this distribution (ConfigMap: llama-stack-config). Let's review this configuration before updating the Tavily search key.
+Also listed is [3] the user configuration used with this distribution (ConfigMap: llama-stack-config). Let's review this configuration before updating the Tavily search key.
 
-=== LlamaStack ConfigMap
+=== LlamaStack User Config
 
-A ConfigMap can be used to store run.yaml configuration for each Llama Stack distribution. Updates to the ConfigMap will restart the Pod to load the new data.
+The user config configmap can be used to store the `run.yaml` configuration for each Llama Stack distribution. Updates to the ConfigMap will restart the Pod to load the new data.
 
 Example run.yaml:
 
