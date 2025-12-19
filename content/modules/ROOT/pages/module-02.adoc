@@ -202,7 +202,6 @@ apiVersion: llamastack.io/v1alpha1
 kind: LlamaStackDistribution
 metadata:
   name: user1-llama-stack
-  namespace: user1-llama-stack
 spec:
   replicas: 1
   server:
@@ -251,12 +250,11 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   name: llama-stack-config
-  namespace: {{ .Values.username }}-llama-stack
 data:
   run.yaml: |
     # Llama Stack configuration
     version: '2'
-    image_name: vllm
+    image_name: rh
     apis:
     - inference
     - tool_runtime
@@ -265,16 +263,16 @@ data:
     - vector_io
     models:
       - metadata: {}
-        model_id: {{ .Values.defaultModel.name }}
-        provider_id: vllm-{{ .Values.defaultModel.name }}
-        provider_model_id: {{ .Values.defaultModel.name }}
+        model_id: granite-3-2-8b-instruct
+        provider_id: vllm-granite-3-2-8b-instruct
+        provider_model_id: granite-3-2-8b-instruct
         model_type: llm
     providers:
       inference:
-      - provider_id: vllm-{{ .Values.defaultModel.name }}
+      - provider_id: vllm-granite-3-2-8b-instruct
         provider_type: "remote::vllm"
         config:
-          url: {{ .Values.defaultModel.url }}
+          url: https://litellm-prod.apps.maas.redhatworkshops.io/v1
           context_length: 4096
           api_token: ${env.DEFAULT_MODEL_API_TOKEN}
           tls_verify: true
@@ -290,18 +288,18 @@ data:
         config:
           persistence_store:
             type: sqlite
-            db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/starter}/agents_store.db
+            db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/rh}/agents_store.db
           responses_store:
             type: sqlite
-            db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/starter}/responses_store.db
+            db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/rh}/responses_store.db
+    server:
+      port: 8321
     tools:
       - name: builtin::websearch
         enabled: true
     tool_groups:
     - provider_id: tavily-search
       toolgroup_id: builtin::websearch
-    server:
-      port: 8321
 ----
 
 Let's now create our own Tavily key and update the Llama Stack distribution to use this key for our websearch tool calls.
