@@ -1,176 +1,18 @@
-= Using Llama Stack
+= Tools and Agents
 
 include::vars.adoc[]
 
-[NOTE]
-====
-Persona: AI Engineer (primary). Also relevant: Platform Engineer.
-====
+So far, we've seen how we can query a given model within the Llama Stack Playground and receive __static information__ based on the model's training data. For many use cases, such as troubleshooting a broken CI pipeline, we would like the model to provide __real-time information__ by accessing external systems such as the web or a CI engine. The technical capability that allows a model to interact with a given system is called a __tool__, and the ability to use tools in order to achieve a given objective is considered a core feature of an __AI agent__.
 
-[IMPORTANT]
-.In this section [Needs update]
-====
-We are going to look at the details of LlamaStack server configuration. Along the way we will use the LlamaStack playground UI as a test client and show how to configure providers, models and MCP servers.
+Let's consider our use case and which tools we may need.
 
-In the final section we will use the playground to develop our Use Case specific prompts.
-====
+Llama Stack simplifies managing and providing tools for agentic use cases. 
 
-[NOTE]
-====
-Estimated time: 60–90 minutes
-====
+Before we try out tool usage and compare agent types in the LLama Stack Playground, we'll have a closer look at how Llama Stack is configured. 
 
-== What you'll do
+In order to enable tools and update provider information such as the websearch API key, we'll have a closer look at how Llama Stack is configured.
 
-* Interact with Llama Stack & Playground
-* Register built-in/MCP tools
-* Develop and refine prompts in Playground
-* Capture configuration and decisions for later modules
-
-
-== LlamaStack
-
-https://llama-stack.readthedocs.io/en/latest/[LlamaStack,window=_blank] is the open-source framework for building generative AI applications. We are going to deploy LlamaStack distribution and then take a look around using the client CLI and the playground UI.
-
-=== Interacting with LlamaStack
-
-. Configure the **llama-stack-client** in your showroom terminal.
-
-+
-[source,bash,options="wrap",role="execute"]
-----
-llama-stack-client configure
-
-http://{etx_agentic_ai_username}-llama-stack-service.{etx_agentic_ai_username}-llama-stack.svc.cluster.local:8321
-
-no key
-----
-+
-
-. Login to OpenShift if you are not already logged in
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc login --server=https://api.${CLUSTER_NAME}.${BASE_DOMAIN}:6443 -u admin -p ${ADMIN_PASSWORD}
-----
-
-
-. Check the connection by listing the version - ideally we match client and server versions
-+
-[source,bash,options="wrap",role="execute"]
-----
-llama-stack-client inspect version
-----
-+
-[source,bash,options="wrap"]
-----
-INFO:httpx:HTTP Request: GET http://localhost:8321/v1/version "HTTP/1.1 200 OK"
-VersionInfo(version='0.2.15')
-----
-
-. If you need help with the client commands, take a look at
-+
-[source,bash,options="wrap",role="execute"]
-----
-llama-stack-client --help
-----
-
-. Now list the providers - this should match what we have configured so far i.e. Tavily Web Search, Inference and agents
-+
-[source,bash,options="wrap",role="execute"]
-----
-llama-stack-client providers list
-----
-+
-[source,bash,options="wrap"]
-----
-INFO:httpx:HTTP Request: GET http://localhost:8321/v1/providers "HTTP/1.1 200 OK"
-┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ API          ┃ Provider ID    ┃ Provider Type          ┃
-┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ inference    │ vllm           │ remote::vllm           │
-│ tool_runtime │ tavily-search  │ remote::tavily-search  │
-│ agents       │ meta-reference │ inline::meta-reference │
-└──────────────┴────────────────┴────────────────────────┘
-
-----
-
-. Check the LlamaStack OpenAPI docs at http://localhost:8321/docs
-+
-image::llama-stack-api-docs.png[LlamaStack API Docs, 800]
-+
-TIP: Browsing will not work in a workbench
-
-. Now list the models
-+
-[source,bash,options="wrap",role="execute"]
-----
-llama-stack-client models list
-----
-+
-[source,bash,options="wrap"]
-----
-INFO:httpx:HTTP Request: GET http://localhost:8321/v1/models "HTTP/1.1 200 OK"
-
-Available Models
-
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ model_type                   ┃ identifier                                               ┃ provider_resource_id                                     ┃ metadata               ┃ provider_id                   ┃
-┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ llm                          │ granite-31-2b-instruct                                   │ granite-31-2b-instruct                                   │                        │ vllm                          │
-└──────────────────────────────┴──────────────────────────────────────────────────────────┴──────────────────────────────────────────────────────────┴────────────────────────┴───────────────────────────────┘
-
-Total models: 1
-
-----
-. Done ✅
-
-=== Playground: LlamaStack User Interface
-
-LlamaStack comes with a simple UI called Playground. For this lab, a Playground instance is already deployed for each user.
-
-. Checkout the Playground pod.
-+
-image::llamastack-playground-pod.png[LlamaStack Playground Pod, 800]
-+
-
-. Click on the route for this pod to access the Playground.
-+
-image::llamastack-playground-route.png[LlamaStack Playground Route, 800]
-+
-
-. Here is the Playground, GUI for interacting with LlamaStack services.
-+
-image::llama-stack-playground2.png[LlamaStack Playground UI, 800]
-
-. Let's first Chat with the LLM by asking a question such as:
-+
-[source,bash,options="wrap",role="execute"]
-----
-What is LlamaStack ?
-----
-
-+
-image::llama-stack-playground-hello.png[LlamaStack Playground Hello, 800]
-+
-
-[NOTE]
-Playground calls the **/v1/chat/completion** endpoint that we can find in the OpenAI docs for the vLLM served model.
-
-. Now, let's ask LLM a question for which it lacks information (e.g. real time data):
-
-+
-[source,bash,options="wrap",role="execute"]
-----
-What is the weather today in Brisbane ?
-----
-+
-image::llamastack-playground-no-websearch.png[LlamaStack Playground without websearch, 800]
-
-
-. In order to find the realtime information, the LLM needs to call a tool like websearch. Let's dive into how to configure Llama Stack and set up access for the websearch tool.
-
-=== Llama Stack Distribution
+== Configuring Llama Stack
 
 As part of OpenShift AI, a Llama Stack instance is represented by the LlamaStackDistribution custom resource (CR) that defines the Llama Stack server configuration including:
 
@@ -238,7 +80,7 @@ You will observe that we've specified the secrets for the services that'll be in
 
 Also listed is [3] the user configuration used with this distribution (ConfigMap: llama-stack-config). Let's review this configuration before updating the Tavily search key.
 
-=== LlamaStack User Config
+== LlamaStack User Config
 
 The user config configmap can be used to store the `run.yaml` configuration for each Llama Stack distribution. Updates to the ConfigMap will restart the Pod to load the new data.
 
@@ -325,7 +167,13 @@ stringData:
 type: Opaque
 ----
 
-. Now update the Llama Stack distribution to reference this new secret instead of the old one.
+. Now update the Llama Stack distribution to reference this new secret instead of the old one. Replace `tavily-search-key` with
+
++
+[source,bash,options="wrap",role="execute"]
+----
+new-tavily-search-key
+----
 +
 .Updated Llama Stack Distribution
 image::llamastackdistribution-updated-key.png[Updated Llama Stack config, 600]
@@ -349,6 +197,8 @@ The LLM is now able to the answer with realtime data provided by the websearch t
 +
 image::llamastack-playground-websearch-regular.png[LlamaStack Playground regular websearch, 800]
 
+== Agent Types
+
 +
 In summary, here is the workflow with a Regular agent.
 +
@@ -363,7 +213,7 @@ image::agent.png[Agent workflow, 600]
 What is the weather today in Brisbane ?
 ----
 +
-Notice that the agent first Reasons - where the LLM thinks about the data or tool results, Acts - where the LLM performs an action, LLM then Observes the result of the tool call, before returning the result.
+Notice that the agent first **Re**asons about the question before it **Acts** on its reasoning outcome. This two-step approach is the core principle of **ReAct**.
 +
 image::llamastack-playground-websearch-react.png[LlamaStack Websearch ReAct Agent, 800]
 

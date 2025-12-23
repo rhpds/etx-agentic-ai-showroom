@@ -1,8 +1,9 @@
 * 1. Introduction & Overview
 ** xref:module-01-01.adoc[1.1 Setting the Stage]
-** xref:module-01-02.adoc[1.2 Lab Setup and Prerequisites]
-* 2. Using Llama Stack
-** xref:module-02.adoc[2. Using Llama Stack]
+** xref:module-01-02.adoc[1.2 The Lab]
+* 2. Building the Agent
+** xref:module-02-01.adoc[2.1 Introducing Llama Stack]
+** xref:module-02-02.adoc[2.2 Tools and Agents]
 * 3. From Prototype to App
 ** xref:module-03.adoc[3. From Prototype to App]
 * 4. Hardening, Observability, Promotion
