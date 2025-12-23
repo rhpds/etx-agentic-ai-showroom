@@ -1,37 +1,24 @@
-= Lab Setup and Prerequisites
-
-include::vars.adoc[]
+= The Lab
 
 == Prerequisites
 
-Before starting this lab, ensure you have the following:
+Before starting this lab, ensure you have a **GitHub Account**, which allows you to fork repositories.
 
-=== Required Tools
-* **GitHub Account**: You'll need access to fork repositories and collaborate
+== Lab Setup
 
-=== Required Skills
-* **Basic Git Knowledge**: Cloning repositories, basic version control concepts
-* **Command Line Basics**: Navigating directories, running commands
-* **Container Concepts**: Understanding of containers and Kubernetes/OpenShift (helpful but not required)
+You have access to a fully-featured OpenShift cluster with **Red Hat OpenShift AI (RHOAI)**, an OpenShift add-on that comes with a number of tools for building, running, and managing AI workloads.
 
-=== Provided by Instructors
-* **Support**: Technical assistance throughout the lab
+== Required Skills
 
+* Basic familiarity with Python programming
+* Basic understanding of CI/CD pipelines
+* Basic Git Knowledge: Cloning repositories, basic version control concepts
+* Command Line Basics: Navigating directories, running commands
+* Container Concepts: Understanding of containers and Kubernetes/OpenShift (helpful but not required)
+* Good grasp of https://openpracticelibrary.com/practice/gitops[GitOps,window=_blank] and https://openpracticelibrary.com/practice/everything-as-code[Everything as Code practices,window=_blank]
 
-== Cluster Environment
+xref:module-01-02.adoc[☕ Buckle Up], Here we go ...
 
-You have now access to a fully-featured OpenShift cluster with **Red Hat OpenShift AI (RHOAI)**, which provides a number of AI-related platform features including https://github.com/llamastack/llama-stack[Llama Stack,window=_blank], a composable framework that provides standardized APIs for model inference, safety guardrails, and tool integration. This allows our AI agents to seamlessly interact with large language models while maintaining consistent interfaces for memory management, tool calling, and safety controls across different model providers.
-
-=== Components
-
-The main components we'll use and study throughout this lab are:
-
-* **Llama Stack**: central API server for our agent,
-* **Llama Stack Playground**: the frontend for interactive prototyping,
-* **Model inference through MaaS**: we're leveraging a remote model deployment that we're accessing through a Models-as-a-Service interface,
-* **Tavily Search Tool**: embedded tool in Llama Stack for online web search,
-* **OpenShift MCP**: for querying OpenShift by our agent,
-* **Github MCP**: for accessing our Github repository via our agent.
 
 
 // lightbox - for images - FIXME need to make the include::partial$lightbox.hbs WORK

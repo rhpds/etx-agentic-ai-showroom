@@ -45,18 +45,6 @@ We will build an intelligent agent that can:
 * Create GitHub issue in the specified repository for tracking
 
 
-== Technical Knowledge
-
-Ideally https://www.redhat.com/tracks/_pfcdn/assets/10330/contents/344388/925d2cb5-39c2-49dc-9ed2-3f4aeeb52a85.pdf[your team is a cross-functional one (Optional: Read Chapter.1 - Introduction),window=_blank] with:
-
-* Good understanding of OpenShift/Kubernetes concepts
-* Basic familiarity with Python programming
-* Good knowledge of https://www.redhat.com/en/topics/containers[containerization,window=_blank] concepts
-* Basic understanding of CI/CD pipelines
-* Good grasp of https://openpracticelibrary.com/practice/gitops[GitOps,window=_blank] and https://openpracticelibrary.com/practice/everything-as-code[Everything as Code practices,window=_blank]
-
-xref:module-01-02.adoc[☕ Buckle Up], Here we go ...
-
 
 // lightbox - for images - FIXME need to make the include::partial$lightbox.hbs WORK
 ++++
