@@ -2,15 +2,21 @@
 
 include::vars.adoc[]
 
-So far, we've seen how we can query a given model within the Llama Stack Playground and receive __static information__ based on the model's training data. For many use cases, such as troubleshooting a broken CI pipeline, we would like the model to provide __real-time information__ by accessing external systems such as the web or a CI engine. The technical capability that allows a model to interact with a given system is called a __tool__, and the ability to use tools in order to achieve a given objective is considered a core feature of an __AI agent__.
+So far, we've seen how we can query a given model within the Llama Stack Playground and receive __static information__ based on the model's training data. For many use cases, such as troubleshooting a broken CI/CD pipeline, we would like the model to provide __real-time information__ by accessing external systems such as the web or the CI/CD runtime. The technical capability that allows a model to interact with a given system is called a __tool__, and the ability to use tools in order to achieve a given objective is considered a core feature of an __AI agent__.
 
-Let's consider our use case and which tools we may need.
+For our use case, we'll need the following tools:
 
-Llama Stack simplifies managing and providing tools for agentic use cases. 
+* **read container logs**: fetch the logs of a given container, which contained the failing pipeline step,
+* **web search**: query a web search engine with a given search string and receive the content of matching web sites,
+* **create Github issue**: open a new issue within a given Github repository with a given issue description.
 
-Before we try out tool usage and compare agent types in the LLama Stack Playground, we'll have a closer look at how Llama Stack is configured. 
+Llama Stack simplifies managing and providing tools for agentic use cases. There are three different ways to use tools in conjunction with Llama Stack:
 
-In order to enable tools and update provider information such as the websearch API key, we'll have a closer look at how Llama Stack is configured.
+* Implement the tool on the client side and pass it to Llama Stack and the model for invocation. This approach can be used during early development if tools are not available otherwise, but it's generally not recommended since it does not allow re-use of tool definitions.
+* Use an existing built-in (inline) tool provider that Llama Stack offers. One example is __websearch__, which uses the https://docs.tavily.com/documentation/about[Tavily] online search engine. Built-in tools are a good option for quickly getting started with tool usage while minimizing maintenance overhead.
+* Integrate an MCP server as a remote tool provider. We will cover MCP integration for accessing OpenShift and Github at a later step.
+
+To get started, we'll enable the built-in websearch tool with our own Tavily API keys after reviewing how to configure Llama Stack.
 
 == Configuring Llama Stack
 
@@ -76,7 +82,7 @@ spec:
 You will observe that we've specified the secrets for the services that'll be interacting with the Llama Stack server:
 
 * [1] MaaS API
-* [2] Tavily search API. We will update this API key later.
+* [2] Tavily search API. We will update this API key in a moment.
 
 Also listed is [3] the user configuration used with this distribution (ConfigMap: llama-stack-config). Let's review this configuration before updating the Tavily search key.
 
@@ -143,6 +149,8 @@ data:
     - provider_id: tavily-search
       toolgroup_id: builtin::websearch
 ----
+
+== Set Up Websearch
 
 Let's now create our own Tavily key and update the Llama Stack distribution to use this key for our websearch tool calls.
 
