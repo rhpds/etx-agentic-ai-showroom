@@ -207,12 +207,19 @@ image::llamastack-playground-websearch-regular.png[LlamaStack Playground regular
 
 == Agent Types
 
-+
+As you noticed, we can choose from 2 different types of agent in the Playground: Regular and ReAct.
+
+=== Regular Agents
+
+// TODO
+
+When a user query is provided, the agent processes the input and determines whether a tool is required to fulfill the request. If the query involves retrieving logs from a pod, the agent invokes the `get_pod_log` tool. The tool interacts with the Kubernetes API server to fetch the container logs. This workflow ensures that the agent can handle a wide range of queries effectively.
+
 In summary, here is the workflow with a Regular agent.
 +
 image::agent.png[Agent workflow, 600]
 
-
+=== ReAct Agents
 
 . Now lets try out the **ReAct** agent to call the tool with the same prompt:
 +
