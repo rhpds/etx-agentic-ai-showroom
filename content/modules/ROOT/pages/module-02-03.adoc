@@ -1,0 +1,403 @@
+= Model Context Protocol
+
+include::vars.adoc[]
+
+== LlamaStack mcp::openshift
+
+Model Context Protocol (MCP) is a popular standard for tool discovery and execution. It allows tools to be dynamically discovered from an MCP endpoint and can be used to extend the agent’s capabilities.
+
+For this lab, we've already deployed the pod that runs the https://github.com/containers/kubernetes-mcp-server[**mcp::openshift**,window=_blank] functions that interact with the OpenShift cluster. However, we need to configure LlamaStack to use this MCP tool.
+
+
+We need to edit the LlamaStack ConfigMap to add tool runtime and tool group.
+
+. Search for your namespace ({etx_agentic_ai_username}-llama-stack), click on ConfigMaps and select llama-stack-config file.
+
++
+image::llamastack-configmap-location.png[LlamaStack ConfigMap location, 800]
+
+
+. Click on YAML tab.
+
++
+image::llamastack-configmap.png[LlamaStack ConfigMap, 800]
+
+. Now, we'll add the tool runtime for MCP:
++
+[source,yaml,options="wrap"]
+----
+      tool_runtime:
+      - provider_id: model-context-protocol
+        provider_type: remote::model-context-protocol
+        config: {}
+----
+
+. Next, we will add the tool group
++
+[source,yaml,options="wrap"]
+----
+    tool_groups:
+    - toolgroup_id: mcp::openshift
+      provider_id: model-context-protocol
+      mcp_endpoint:
+        uri: http://ocp-mcp-server.mcp-openshift.svc.cluster.local:8000/sse
+----
+
+. Refresh the playground in the browser. Select the **Tools** playground with the **MCP Servers openshift** and expand tools from.
+
++
+image::llamastack-playground-mcp-openshift.png[LlamaStack MCP OpenShift tool, 800]
+
+. Checkout the list of actions that can performed by MCP:OpenShift tools.
+
++
+image::llamastack-playground-mcp-openshift-tools.png[LlamaStack MCP OpenShift tool list, 800]
+
+
+. Select **Regular agent** and try the prompt:
++
+[source,bash,options="wrap",role="execute"]
+----
+list pods in the mcp-openshift namespace
+----
+
+. Try different agents and prompts. Not all of them work all of the time. This is a common problem with Tool calling and LLMs.
+
+. Done ✅
+
+== LlamaStack mcp::github
+
+
+In the previous section, we used MCP servers that were already provisioned for us. In this section, we'll:
+
+* Enable access to GitHub repo
+* Deploy https://github.com/github/github-mcp-server[GitHub server,window=_blank]
+* Enable it in LlamaStack
+* Use it in the Playground
+
+First, we need to enable access to our github repo so MCP GitHub tool can interact with it.
+
+. **Set up your repository**
+.. https://github.com/rhpds/etx-agentic-ai-gitops[Fork the etx-agentic-ai repository,window=_blank] to your personal GitHub account
++
+.GitHub Repo Fork
+image::github-fork.png[GitHub Repo Fork, 400]
++
+
+.. Ensure that you **Enable Issues** for your fork under **Settings** > **General** > **Features** > **Issues** as they are disabled for forked repos by default
++
+.GitHub Repo Enable Issues
+image::github-repo-enable-issues.png[GitHub Repo Enable Issues, 400]
++
+
+. **Setup GitHub Token**
+
+.. Click on your user icon > **Settings**
+
+.. Select **Developer Settings** > **Personal Access Tokens** > **Fine-grained personal access tokens**
+
+.. Select Button **Generate a new token** - give it a token name e.g. __etx-ai__
+
+.. Set **Repository access**
++
+**Select repositories**: allow access to the repository you forked above.
+
+.. Give it the following permissions:
++
+**Commit statuses**: Read-Only
++
+**Content**: Read-Only
++
+**Issues**: Read and Write
++
+**Metadata**: Read-Only (this gets added automatically)
++
+**Pull requests**: Read-Only
++
+.GitHub Repo Perms
+image::github-repo-perms.png[GitHub Repo Perms, 400]
+
+.. Generate the token.
++
+.GitHub Repo Token
+image::github-pat.png[GitHub Repo Token, 400]
+
+[TIP]
+====
+Save the token for easy access as you'll need to use it later in the lab.
+====
+
+
+. **Clone the repository**
+.. If you're running the lab using your laptop, you can clone the repository locally to your laptop.
++
+[source,bash,options="wrap",role="execute"]
+----
+git clone git@github.com:your-gh-user/etx-agentic-ai-gitops.git
+cd etx-agentic-ai-gitops
+----
++
+image::github-clone.png[GitHub Repo Clone, 400]
++
+
+
+.. Done ✅
+
+. **Deploy MCP GitHub Server**
+
+.. In the OpenShift Console, choose project ({etx_agentic_ai_username}.llama-stack) and navigate to Workloads -> Secrets.
+
+.. Click on *Create* (from YAML)
+
++
+[source,yaml,options="wrap"]
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-credentials-v1
+  namespace: {etx_agentic_ai_username}-llama-stack
+type: Opaque
+stringData:
+  # Add your PAT here
+  # Important: not for production use, demo purposes only
+  token: <YOUR_GITHUB_PERSONAL_ACCESS_TOKEN>
+----
++
+
+[TIP]
+====
+Update namespace and your GitHub personal access token you had created earlier
+====
+
+.. In the OpenShift Console, continuing with project {etx_agentic_ai_username}.llama-stack), navigate to Workloads -> Deployments.
+
+.. Click on *Create* and choose YAML view
+
++
+[source,yaml,options="wrap"]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-mcp-server
+  namespace: {etx_agentic_ai_username}-llama-stack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: github-mcp-server
+  template:
+    metadata:
+      labels:
+        app: github-mcp-server
+    spec:
+      containers:
+      - name: github-mcp-server
+        image: quay.io/eformat/github-mcp-server:latest
+        imagePullPolicy: Always
+        command: ["/usr/local/bin/start-server.sh"]
+        ports:
+        - containerPort: 8080
+        env:
+        - name: GITHUB_PERSONAL_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: github-credentials-v1
+              key: token
+        resources:
+          limits:
+            memory: "512Mi"
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+----
++
+
+[TIP]
+====
+Update namespace
+====
+
+
+.. In the OpenShift Console, continuing with project {etx_agentic_ai_username}.llama-stack), navigate to Networking -> Services.
+
+.. Click on *Create Service*
+
++
+[source,yaml,options="wrap"]
+----
+apiVersion: v1
+kind: Service
+metadata:
+  name: github-mcp-server
+  namespace: {etx_agentic_ai_username}-llama-stack
+spec:
+  selector:
+    app: github-mcp-server
+  ports:
+  - port: 80
+    targetPort: 8080
+----
++
+
+[TIP]
+====
+Update namespace
+====
+
++
+. **Enable mcp::github in LlamaStack**
+
+[NOTE]
+====
+The configuration is very similar to what we did for add MCP:OpenShift tool earlier.
+====
+
+. Edit the LlamaStack ConfigMap to add MCP:GitHub tool.
+
+. Add in the tool group.
+
++
+[source,yaml,options="wrap"]
+----
+    tool_groups:
+    - toolgroup_id: mcp::github
+      provider_id: model-context-protocol
+      mcp_endpoint:
+        uri: http://github-mcp-server:80/sse
+----
++
+
+[NOTE]
+====
+Notice that the URI for the MCP Server uses Server Sent Events (/sse).
+====
+
+. Refresh the playground in the browser. Select the **Tools** playground with the **MCP Servers github** and **Regular agent**. Try the prompt (replace the github user with your user).
++
+[source,bash,options="wrap",role="execute"]
+----
+List the branches from ${YOUR_GITHUB_USER}/etx-agentic-ai-gitops repo.
+----
++
+image::llama-playground-mcp-github-chat.png[LlamaStack MCP GitHub, 800]
++
+
+. Try different agents and prompts. Not all of them work all of the time. This is a common problem with Tool calling and LLMs
+
+. Checkout the list of actions that can performed by MCP:github tools.
+
++
+image::llamastack-playground-mcp-github-tools.png[LlamaStack MCP OpenShift tool list, 800]
+
+. *Create a GitHub issue*
+
++
+.. Try this prompt (replace the github user with your user).
++
+[source,bash,options="wrap",role="execute"]
+----
+Create a github issue for a fake error in the ${YOUR_GITHUB_USER}/etx-agentic-ai repo and assign it to ${YOUR_GITHUB_USER}.
+----
++
+image::playground-github-issue.png[LlamaStack Playground Github issue prompt, 800]
++
+
+.. Confirm that the issue has been created in your repo
+
++
+image::github-issue.png[Github issue, 800]
++
+
+. Done ✅
+
+
+=== LlamaStack Observability
+
+LlamaStack integrates with the Observability stack we deployed as part of the bootstrap. The observability stack has a lot of moving parts. Traces are sent from LlamaStack via OTEL to a Tempo sink endpoint. We can then view traces in OpenShift using the Observe > Traces dashboard.
+
+. Edit the LlamaStack ConfigMap to add telemetry stanza with the service name, sinks and the OTEL Tracing endpoint which is set as an environment variable on the Deployment
++
+[source,yaml,options="wrap"]
+----
+apis:
+...
+- telemetry
+
+providers:
+...
+  telemetry:
+  - provider_id: meta-reference
+    provider_type: inline::meta-reference
+    config:
+      service_name: "${env.OTEL_SERVICE_NAME:=}"
+      sinks: ${env.TELEMETRY_SINKS:=console}
+      otel_exporter_otlp_endpoint: ${env.OTEL_EXPORTER_OTLP_ENDPOINT:=}
+      sqlite_db_path: /opt/app-root/src/.llama/distributions/rh/trace_store.db
+----
+
+. Refresh the playground in the browser. Select the Tools playground and select websearch, the MCP github Server and MCP OpenShift tool, ReAct agent and Llama4 model. Try out some of the previous prompting that include Tool calls to generate some traces.
++
+image::llama-stack-traces1.png[LlamaStack Traces, 800]
++
+image::llama-stack-traces2.png[LlamaStack Traces, 800]
+
+. Done ✅
+
+== LlamaStack Configured
+
+. Check the completed LlamaStack configuration
++
+[source,bash,options="wrap",role="execute"]
+----
+llama-stack-client providers list
+----
++
+[source,bash,options="wrap"]
+----
+INFO:httpx:HTTP Request: GET http://localhost:8321/v1/providers "HTTP/1.1 200 OK"
+┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ API          ┃ Provider ID            ┃ Provider Type                  ┃
+┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ scoring      │ basic                  │ inline::basic                  │
+│ scoring      │ llm-as-judge           │ inline::llm-as-judge           │
+│ agents       │ meta-reference         │ inline::meta-reference         │
+│ inference    │ vllm                   │ remote::vllm                   │
+│ inference    │ vllm-llama-3-2-3b      │ remote::vllm                   │
+│ inference    │ vllm-llama-4-guard     │ remote::vllm                   │
+│ inference    │ sentence-transformers  │ inline::sentence-transformers  │
+│ tool_runtime │ model-context-protocol │ remote::model-context-protocol │
+│ tool_runtime │ brave-search           │ remote::brave-search           │
+│ tool_runtime │ tavily-search          │ remote::tavily-search          │
+│ telemetry    │ meta-reference         │ inline::meta-reference         │
+└──────────────┴────────────────────────┴────────────────────────────────┘
+----
++
+[source,bash,options="wrap",role="execute"]
+----
+llama-stack-client models list
+----
++
+[source,bash,options="wrap"]
+----
+INFO:httpx:HTTP Request: GET http://localhost:8321/v1/models "HTTP/1.1 200 OK"
+
+Available Models
+
+┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ model_type      ┃ identifier                                                         ┃ provider_resource_id                    ┃ metadata                                    ┃ provider_id                  ┃
+┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ llm             │ vllm/granite-31-2b-instruct                                        │ granite-31-2b-instruct                  │                                             │ vllm                         │
+├─────────────────┼────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────┼─────────────────────────────────────────────┼──────────────────────────────┤
+│ llm             │ vllm-llama-3-2-3b/llama-3-2-3b                                     │ llama-3-2-3b                            │                                             │ vllm-llama-3-2-3b            │
+├─────────────────┼────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────┼─────────────────────────────────────────────┼──────────────────────────────┤
+│ llm             │ vllm-llama-4-guard/llama-4-scout-17b-16e-w4a16                     │ llama-4-scout-17b-16e-w4a16             │                                             │ vllm-llama-4-guard           │
+├─────────────────┼────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────┼─────────────────────────────────────────────┼──────────────────────────────┤
+│ embedding       │ sentence-transformers/all-MiniLM-L6-v2                             │ all-MiniLM-L6-v2                        │ {'embedding_dimension': 384.0}              │ sentence-transformers        │
+└─────────────────┴────────────────────────────────────────────────────────────────────┴─────────────────────────────────────────┴─────────────────────────────────────────────┴──────────────────────────────┘
+
+Total models: 4
+----
+
+. Done ✅
