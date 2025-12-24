@@ -8,4 +8,5 @@
 * 3. From Prototype to App
 ** xref:module-03.adoc[3. From Prototype to App]
 * 4. Hardening, Observability, Promotion
-** xref:module-04.adoc[4. Hardening, observability, promotion]
+** xref:module-04-01.adoc[4.1 Hardening, observability, promotion]
+** xref:module-04-02.adoc[4.2 Llama Stack Observability]
