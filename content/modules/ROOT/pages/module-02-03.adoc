@@ -5,9 +5,9 @@ include::vars.adoc[]
 So far, we have enabled rudimentary agentic capabilities in our playground by enabling the websearch tool, which is provided by Llama Stack as a built-in tool. In our use case, our agent also needs to interact with OpenShift and GitHub, neither of which can be done with built-in Llama Stack tools. However, Llama Stack supports usage of external tool providers, so we can leverage custom or pre-built tools that are available via https://modelcontextprotocol.io/docs/getting-started/intro[Model Context Protocol]:
 
 [quote]
-----
+____
 MCP (Model Context Protocol) is an open-source standard for connecting AI applications to external systems. Using MCP, AI applications like Claude or ChatGPT can connect to data sources (e.g. local files, databases), tools (e.g. search engines, calculators) and workflows (e.g. specialized prompts)—enabling them to access key information and perform tasks. Think of MCP like a USB-C port for AI applications. Just as USB-C provides a standardized way to connect electronic devices, MCP provides a standardized way to connect AI applications to external systems.
-----
+____
 
 In other words, as long as our agent runtime supports MCP, we can plug in existing MCP-based tool providers to unlock arbitrary integration capabilities. Furthermore, as per https://modelcontextprotocol.io/specification/2025-11-25[MCP specification]:
 
@@ -133,7 +133,7 @@ image::llamastack-playground-restart.png[Llama Stack Playground restart, 800]
 +
 image::llamastack-playground-mcp-openshift.png[Llama Stack MCP OpenShift tool, 800]
 
-. Checkout the list of tools that can be invoked via the OpenShift tools provider.
+. Check the list of tools that can be invoked via the OpenShift tools provider.
 
 +
 image::llamastack-playground-mcp-openshift-tools.png[Llama Stack MCP OpenShift tool list, 800]
@@ -210,20 +210,6 @@ image::github-repo-perms.png[GitHub Repo Perms, 400]
 ====
 Save the token for easy access as you'll need to use it later in the lab.
 ====
-
-
-. **Clone the repository**
-
-.. Run the following command after replacing `<YOUR_GITHUB_USER>` with your GitHub user ID.
-+
-[source,bash,options="wrap",role="execute"]
-----
-git clone https://github.com/<YOUR_GITHUB_USER>/etx-agentic-ai-gitops.git
-cd etx-agentic-ai-gitops
-----
-+
-image::github-clone.png[GitHub Repo Clone, 400]
-+
 
 
 . **Deploy GitHub MCP Server**
