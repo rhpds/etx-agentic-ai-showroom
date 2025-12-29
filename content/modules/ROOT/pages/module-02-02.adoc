@@ -90,7 +90,7 @@ Also listed is [3] the user configuration used with this distribution (ConfigMap
 
 The user config configmap can be used to store the `run.yaml` configuration for each Llama Stack distribution. Updates to the ConfigMap will restart the Pod to load the new data.
 
-Your current Llama Stack config should like the following. Please refer to the https://llamastack.github.io/docs/distributions/customizing_run_yaml[Llama Stack documentation] for details and customization options.
+Your current Llama Stack config should like the following. Refer to the https://llamastack.github.io/docs/distributions/customizing_run_yaml[Llama Stack documentation] for details and customization options.
 
 [source,yaml,options="wrap"]
 ----
@@ -163,7 +163,7 @@ image::tavily-apikey.png[Create Tavily API Key, 600]
 
 . Create a new secret object using this specification while replacing the PLACEHOLDER with your Tavily key.
 
-[source,yaml,options="wrap"]
+[source,yaml,options="wrap",role="execute"]
 ----
 kind: Secret
 apiVersion: v1
@@ -247,3 +247,5 @@ For a given user query, the ReAct workflow includes the following steps (see dia
 Unlike the regular agent approach, ReAct dynamically breaks down tasks and adapts its approach based on the results of each step. This makes it more flexible and capable of handling complex, real-world queries effectively.
 
 image::react-agent.png[ReAct Agent, 600]
+
+Now that we explored agent types with a simple built-in tool, let's dive into MCP integration for enabling more powerful capabilities!
