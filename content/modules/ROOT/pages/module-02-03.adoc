@@ -58,9 +58,9 @@ image::llamastack-configmap.png[LlamaStack ConfigMap, 800]
   mcp_endpoint:
     uri: http://ocp-mcp-server.mcp-openshift.svc.cluster.local:8000/sse
 ----
-
-. Your run.yaml should now look like this:
 +
+.Your run.yaml should now look like this.
+[%collapsible]
 [source,yaml,option="wrap"]
 ----
 # Llama Stack configuration
@@ -205,12 +205,12 @@ image::github-repo-enable-issues.png[GitHub Repo Enable Issues, 400]
 image::github-repo-perms.png[GitHub Repo Perms, 400]
 
 .. Generate the token.
-
++
 [TIP]
 ====
 Save the token for easy access as you'll need to use it later in the lab.
 ====
-
++
 
 . **Deploy GitHub MCP Server**
 
@@ -301,9 +301,8 @@ As in the previous section, we'll reference the GitHub MCP server in the Llama S
     uri: http://github-mcp-server:80/sse
 ----
 +
-
-. For reference, your run.yaml should now look like this:
-+
+.For reference, your run.yaml should now look like this.
+[%collapsible]
 [source,yaml,option="wrap"]
 ----
 # Llama Stack configuration
