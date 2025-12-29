@@ -42,7 +42,7 @@ image::llamastackdistribution-current.png[LlamaStack distribution current, 800]
 image::llamastackdistribution-tab.png[LlamaStack distribution tab, 800]
 +
 
-. Check out the LlamaStack Distribution we're using for this lab.
+. Review the LlamaStack Distribution we're using for this lab.
 
 [source,yaml]
 ----
@@ -79,7 +79,7 @@ spec:
       configMapName: llama-stack-config
 ----
 
-You will observe that we've specified the secrets for the services that'll be interacting with the Llama Stack server:
+As you can see, we've specified the secrets for the services that'll be interacting with the Llama Stack server:
 
 * [1] MaaS API
 * [2] Tavily search API. We will update this API key in a moment.
@@ -198,7 +198,7 @@ image::llamastack-playground-websearch.png[LlamaStack Playground with websearch,
 +
 [source,bash,options="wrap",role="execute"]
 ----
-What is the weather today in Brisbane ?
+What is the weather today in Brisbane?
 ----
 The LLM is now able to the answer with realtime data provided by the websearch tool.
 
@@ -216,7 +216,7 @@ In the previous example, once we enabled the websearch tool for our Regular agen
 The __Regular__ agent apply the most basic and straightforward strategy for processing user queries with tools (see diagram):
 
 1. When a user query is provided, the agent processes the input and determines whether a tool is required to fulfill the request.
-2. If the query involves retrieving current information, the agent invokes the websearch tool.
+2. Because the query involves retrieving current information, the agent invokes the websearch tool.
 3. The tool interacts with the online web search backend, which returns a list of matching results.
 4. The agent processes the tool response and generates a response to the user prompt.
 
@@ -230,7 +230,7 @@ image::agent.png[Regular agent workflow, 600]
 +
 [source,bash,options="wrap",role="execute"]
 ----
-What is the weather today in Brisbane ?
+What is the weather today in Brisbane?
 ----
 +
 image::llamastack-playground-websearch-react.png[LlamaStack Websearch ReAct Agent, 800]
