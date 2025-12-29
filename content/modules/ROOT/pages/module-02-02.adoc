@@ -163,7 +163,7 @@ image::tavily-apikey.png[Create Tavily API Key, 600]
 
 . Create a new secret object using this specification while replacing the PLACEHOLDER with your Tavily key.
 
-[source,yaml,options="wrap",role="execute"]
+[source,yaml,options="wrap",role="execute",subs="attributes+"]
 ----
 kind: Secret
 apiVersion: v1

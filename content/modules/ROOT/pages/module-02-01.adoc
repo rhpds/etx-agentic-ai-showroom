@@ -36,7 +36,7 @@ There's a Llama Stack instance that's running in your lab environment. We will u
 . Configure the **llama-stack-client** in your showroom terminal.
 
 +
-[source,bash,options="wrap",role="execute"]
+[source,bash,options="wrap",role="execute",subs="attributes+"]
 ----
 llama-stack-client configure
 
@@ -48,9 +48,9 @@ no key
 
 . Log in to OpenShift if you are not already logged in
 +
-[source,bash,options="wrap",role="execute"]
+[source,bash,options="wrap",role="execute",subs="attributes+"]
 ----
-oc login --server=https://api.${CLUSTER_NAME}.${BASE_DOMAIN}:6443 -u admin -p ${ADMIN_PASSWORD}
+oc login --server=https://api.{etx_agentic_ai_apps_domain}:6443 -u {etx_agentic_ai_username} -p {etx_agentic_ai_password}
 ----
 
 
