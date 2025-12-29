@@ -2,7 +2,7 @@
 
 include::vars.adoc[]
 
-So far, we have enabled rudimentary agentic capabilities in our playground by enabling the websearch tool, which is provided by Llama Stack as a built-in tool. In our use case, our agent also needs to interact with OpenShift and GitHub, neither of which can be done with built-in Llama Stack tools. However, Llama Stack supports usage of external tool providers, so we can leverage custom or pre-built tools that are available via https://modelcontextprotocol.io/docs/getting-started/intro[Model Context Protocol]:
+So far, we have enabled rudimentary agentic capabilities in our playground by enabling the websearch tool, which is provided by Llama Stack as a built-in tool. For our use case, our agent also needs to interact with OpenShift and GitHub, neither of which can be done with built-in Llama Stack tools. However, Llama Stack supports usage of external tool providers, so we can leverage custom or pre-built tools that are available via https://modelcontextprotocol.io/docs/getting-started/intro[Model Context Protocol]:
 
 [quote]
 ____
@@ -29,7 +29,7 @@ For this lab, we've already deployed the pod that runs the https://github.com/co
 
 We need to edit the `run.yaml` in our `llama-stack-config` ConfigMap to add the tool runtime and tool group.
 
-. Search for your namespace ({etx_agentic_ai_username}-llama-stack), click on ConfigMaps and select llama-stack-config file.
+. Within the `{etx_agentic_ai_username}-llama-stack` project, click on ConfigMaps and select `llama-stack-config` file.
 
 +
 image::llamastack-configmap-location.png[LlamaStack ConfigMap location, 800]
@@ -44,23 +44,24 @@ image::llamastack-configmap.png[LlamaStack ConfigMap, 800]
 +
 [source,yaml,options="wrap",role="execute"]
 ----
-  - provider_id: model-context-protocol
-    provider_type: remote::model-context-protocol
-    config: {}
+      - provider_id: model-context-protocol
+        provider_type: remote::model-context-protocol
+        config: {}
 ----
 
 . Next, add the following entry under `tool_groups`:
 +
 [source,yaml,options="wrap",role="execute"]
 ----
-- toolgroup_id: mcp::openshift
-  provider_id: model-context-protocol
-  mcp_endpoint:
-    uri: http://ocp-mcp-server.mcp-openshift.svc.cluster.local:8000/sse
+    - toolgroup_id: mcp::openshift
+      provider_id: model-context-protocol
+      mcp_endpoint:
+        uri: http://ocp-mcp-server.mcp-openshift.svc.cluster.local:8000/sse
 ----
 +
 .Your run.yaml should now look like this.
 [%collapsible]
+====
 [source,yaml,option="wrap"]
 ----
 # Llama Stack configuration
@@ -119,6 +120,7 @@ tool_groups:
   mcp_endpoint:
     uri: http://ocp-mcp-server.mcp-openshift.svc.cluster.local:8000/sse
 ----
+====
 
 . Hit `Save`. The Llama Stack operator restarts Llama Stack since its configuration changed.
 
@@ -133,7 +135,7 @@ image::llamastack-playground-restart.png[Llama Stack Playground restart, 800]
 +
 image::llamastack-playground-mcp-openshift.png[Llama Stack MCP OpenShift tool, 800]
 
-. Check the list of tools that can be invoked via the OpenShift tools provider.
+. Review the list of tools that can be invoked via the OpenShift tools provider.
 
 +
 image::llamastack-playground-mcp-openshift-tools.png[Llama Stack MCP OpenShift tool list, 800]
@@ -165,7 +167,7 @@ In the previous section, we used an MCP server that was already provisioned for 
 First, we need to enable access to our GitHub repository so our GitHub tools can interact with it.
 
 . **Set up your repository**
-.. For the https://github.com/rhpds/etx-agentic-ai-gitops[lab repository,window=_blank] to your personal GitHub account.
+.. Fork the https://github.com/rhpds/etx-agentic-ai-gitops[lab repository,window=_blank] to your personal GitHub account.
 +
 .GitHub Repo Fork
 image::github-fork.png[GitHub Repo Fork, 400]
@@ -214,7 +216,7 @@ Save the token for easy access as you'll need to use it later in the lab.
 
 . **Deploy GitHub MCP Server**
 
-.. In the OpenShift Console, select project `{etx_agentic_ai_username}.llama-stack`, then select `Quick create` -> `Import YAML`
+.. In the OpenShift Console, select project `{etx_agentic_ai_username}-llama-stack`, then select `Quick create` -> `Import YAML`
 
 +
 image::ocp-import-yaml.png[OpenShift import YAML, 400]
@@ -290,19 +292,20 @@ As in the previous section, we'll reference the GitHub MCP server in the Llama S
 
 . Edit the LlamaStack ConfigMap `llama-stack-config`.
 
-. Add the following entry under `tool_groups`. Note that we don't have to edit the tool runtime section since we already added the MCP runtime entry previously.
+. Add the following entry under `tool_groups` and save your changes. Note that we don't have to edit the tool runtime section since we already added the MCP runtime entry previously.
 
 +
 [source,yaml,options="wrap",role="execute"]
 ----
-- toolgroup_id: mcp::github
-  provider_id: model-context-protocol
-  mcp_endpoint:
-    uri: http://github-mcp-server:80/sse
+    - toolgroup_id: mcp::github
+      provider_id: model-context-protocol
+      mcp_endpoint:
+        uri: http://github-mcp-server:80/sse
 ----
 +
 .For reference, your run.yaml should now look like this.
 [%collapsible]
+====
 [source,yaml,option="wrap"]
 ----
 # Llama Stack configuration
@@ -365,14 +368,15 @@ tool_groups:
   mcp_endpoint:
     uri: http://github-mcp-server:80/sse
 ----
+====
 
 . Restart the playground by deleting its pod (starting with `llama-stack-playground`). Wait until it's Ready and Running.
 
-. Refresh the playground in the browser. Select the **Tools** playground with the **MCP Servers github** and **Regular agent**. Try the prompt (replace the GitHub user with your user).
+. Refresh the playground in the browser. Select the **Tools** playground with the **github** MCP tool provider and **Regular agent**. Try the prompt (replace the GitHub user with your user).
 +
 [source,bash,options="wrap",role="execute"]
 ----
-List the branches from ${YOUR_GITHUB_USER}/etx-agentic-ai-gitops repo.
+List the branches of the ${YOUR_GITHUB_USER}/etx-agentic-ai-gitops repository.
 ----
 +
 image::llama-playground-mcp-github-chat.png[LlamaStack MCP GitHub, 800]
@@ -380,7 +384,7 @@ image::llama-playground-mcp-github-chat.png[LlamaStack MCP GitHub, 800]
 
 . Experiment with different agents and prompts.
 
-. Check the list of tools that can invoked via the github tool provider.
+. Review the list of tools that can invoked via the github tool provider.
 
 +
 image::llamastack-playground-mcp-github-tools.png[LlamaStack MCP OpenShift tool list, 800]
@@ -388,11 +392,15 @@ image::llamastack-playground-mcp-github-tools.png[LlamaStack MCP OpenShift tool 
 . *Create a GitHub issue*
 
 +
-.. Try this prompt (replace the GitHub user with your user).
+.. Try this prompt (replace `${YOUR_GITHUB_USER}` with your GitHub user ID).
 +
 [source,bash,options="wrap",role="execute"]
 ----
-Create a github issue for a fake error in the ${YOUR_GITHUB_USER}/etx-agentic-ai repo and assign it to ${YOUR_GITHUB_USER}.
+Create a GitHub issue for a fake error in order to demonstrate GitHub tool usage.
+
+Use the "create_issue" tool with these tool parameters:
+{"arguments": {"owner": "${YOUR_GITHUB_USER}", "repo": "etx-agentic-ai-gitops", "title": "Fake Error: Agentic AI Service Unresponsive", "body": "The Agentic AI service is not responding. This is a fake error report."}
+Do not add any optional parameters.
 ----
 +
 image::playground-github-issue.png[LlamaStack Playground Github issue prompt, 800]

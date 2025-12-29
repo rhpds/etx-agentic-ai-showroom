@@ -36,22 +36,19 @@ There's a Llama Stack instance that's running in your lab environment. We will u
 . Configure the **llama-stack-client** in your showroom terminal.
 
 +
-[source,bash,options="wrap",role="execute",subs="attributes+"]
+[source,bash,options="wrap",role="execute"]
 ----
 llama-stack-client configure
-
-http://{etx_agentic_ai_username}-llama-stack-service.{etx_agentic_ai_username}-llama-stack.svc.cluster.local:8321
-
-no key
 ----
 +
-
-. Log in to OpenShift if you are not already logged in
+For the endpoint of the Llama Stack distribution server enter:
 +
 [source,bash,options="wrap",role="execute",subs="attributes+"]
 ----
-oc login --server=https://api.{etx_agentic_ai_apps_domain}:6443 -u {etx_agentic_ai_username} -p {etx_agentic_ai_password}
+http://{etx_agentic_ai_username}-llama-stack-service.{etx_agentic_ai_username}-llama-stack.svc.cluster.local:8321
 ----
++
+When prompted for the API key, leave the value empty and hit enter.
 
 
 . Check the connection by listing the version--ideally we match client and server versions
@@ -140,7 +137,7 @@ image::llama-stack-playground2.png[Llama Stack Playground UI, 800]
 +
 [source,bash,options="wrap",role="execute"]
 ----
-What is Llama Stack ?
+What is AI?
 ----
 
 +
@@ -152,7 +149,7 @@ image::llama-stack-playground-hello.png[Llama Stack Playground Hello, 800]
 +
 [source,bash,options="wrap",role="execute"]
 ----
-What is the weather today in Brisbane ?
+What is the weather today in Brisbane?
 ----
 +
 image::llamastack-playground-no-websearch.png[LlamaStack Playground without websearch, 800]
