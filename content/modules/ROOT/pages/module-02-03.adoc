@@ -2,14 +2,26 @@
 
 include::vars.adoc[]
 
-== LlamaStack mcp::openshift
+So far, we have enabled rudimentary agentic capabilities in our playground by enabling the websearch tool, which is provided by Llama Stack as a built-in tool. In our use case, our agent also needs to interact with OpenShift and GitHub, neither of which can be done with built-in Llama Stack tools. However, Llama Stack supports usage of external tool providers, so we can leverage custom or pre-built tools that are available via https://modelcontextprotocol.io/docs/getting-started/intro[Model Context Protocol]:
 
-Model Context Protocol (MCP) is a popular standard for tool discovery and execution. It allows tools to be dynamically discovered from an MCP endpoint and can be used to extend the agent’s capabilities.
+  MCP (Model Context Protocol) is an open-source standard for connecting AI applications to external systems. Using MCP, AI applications like Claude or ChatGPT can connect to data sources (e.g. local files, databases), tools (e.g. search engines, calculators) and workflows (e.g. specialized prompts)—enabling them to access key information and perform tasks. Think of MCP like a USB-C port for AI applications. Just as USB-C provides a standardized way to connect electronic devices, MCP provides a standardized way to connect AI applications to external systems.
 
-For this lab, we've already deployed the pod that runs the https://github.com/containers/kubernetes-mcp-server[**mcp::openshift**,window=_blank] functions that interact with the OpenShift cluster. However, we need to configure LlamaStack to use this MCP tool.
+In other words, as long as our agent runtime supports MCP, we can plug in existing MCP-based tool providers to unlock arbitrary integration capabilities. Furthermore, as per https://modelcontextprotocol.io/specification/2025-11-25[MCP specification]:
 
+  MCP provides a standardized way for applications to:
+    - Share contextual information with language models
+    - Expose tools and capabilities to AI systems
+    - Build composable integrations and workflows
 
-We need to edit the LlamaStack ConfigMap to add tool runtime and tool group.
+This means the details of the provided tools (which tools, for which purpose, how to use them) are exposed directly to the language model, so there is zero configuration overhead on our side once the MCP integration is taken care of. The dynamic discoverability and exposing of contextual information is tailored for language models.
+
+Let's now dive into how to add MCP-based tool providers to Llama Stack.
+
+== Adding the Kubernetes MCP Server to Llama Stack
+
+For this lab, we've already deployed the pod that runs the https://github.com/containers/kubernetes-mcp-server[**Kubernetes MCP server**,window=_blank] that interacts with our OpenShift cluster. Let's add it to Llama Stack as a new tool provider.
+
+We need to edit the `run.yaml` in our `llama-stack-config` ConfigMap to add the tool runtime and tool group.
 
 . Search for your namespace ({etx_agentic_ai_username}-llama-stack), click on ConfigMaps and select llama-stack-config file.
 
@@ -17,42 +29,108 @@ We need to edit the LlamaStack ConfigMap to add tool runtime and tool group.
 image::llamastack-configmap-location.png[LlamaStack ConfigMap location, 800]
 
 
-. Click on YAML tab.
+. Click on the YAML tab.
 
 +
 image::llamastack-configmap.png[LlamaStack ConfigMap, 800]
 
-. Now, we'll add the tool runtime for MCP:
+. Add the following entry under `providers.tool_runtime`:
 +
-[source,yaml,options="wrap"]
+[source,yaml,options="wrap",role="execute"]
 ----
-      tool_runtime:
-      - provider_id: model-context-protocol
-        provider_type: remote::model-context-protocol
-        config: {}
+  - provider_id: model-context-protocol
+    provider_type: remote::model-context-protocol
+    config: {}
 ----
 
-. Next, we will add the tool group
+. Next, add the following entry under `tool_groups`:
 +
-[source,yaml,options="wrap"]
+[source,yaml,options="wrap",role="execute"]
 ----
-    tool_groups:
-    - toolgroup_id: mcp::openshift
-      provider_id: model-context-protocol
-      mcp_endpoint:
-        uri: http://ocp-mcp-server.mcp-openshift.svc.cluster.local:8000/sse
+- toolgroup_id: mcp::openshift
+  provider_id: model-context-protocol
+  mcp_endpoint:
+    uri: http://ocp-mcp-server.mcp-openshift.svc.cluster.local:8000/sse
 ----
+
+. Your run.yaml should now look like this:
++
+[source,yaml,option="wrap"]
+----
+# Llama Stack configuration
+version: '2'
+image_name: rh
+apis:
+- inference
+- tool_runtime
+- agents
+- safety
+- vector_io
+models:
+  - metadata: {}
+    model_id: granite-3-2-8b-instruct
+    provider_id: vllm-granite-3-2-8b-instruct
+    provider_model_id: granite-3-2-8b-instruct
+    model_type: llm
+providers:
+  inference:
+  - provider_id: vllm-granite-3-2-8b-instruct
+    provider_type: "remote::vllm"
+    config:
+      url: https://litellm-prod.apps.maas.redhatworkshops.io/v1
+      context_length: 4096
+      api_token: ${env.DEFAULT_MODEL_API_TOKEN}
+      tls_verify: true
+  tool_runtime:
+  - provider_id: tavily-search
+    provider_type: remote::tavily-search
+    config:
+      api_key: ${env.TAVILY_API_KEY}
+      max_results: 3
+  - provider_id: model-context-protocol
+    provider_type: remote::model-context-protocol
+    config: {}
+  agents:
+  - provider_id: meta-reference
+    provider_type: inline::meta-reference
+    config:
+      persistence_store:
+        type: sqlite
+        db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/rh}/agents_store.db
+      responses_store:
+        type: sqlite
+        db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/rh}/responses_store.db
+server:
+  port: 8321
+tools:
+  - name: builtin::websearch
+    enabled: true
+tool_groups:
+- provider_id: tavily-search
+  toolgroup_id: builtin::websearch
+- toolgroup_id: mcp::openshift
+  provider_id: model-context-protocol
+  mcp_endpoint:
+    uri: http://ocp-mcp-server.mcp-openshift.svc.cluster.local:8000/sse
+----
+
+. Hit `Save`. The Llama Stack operator restarts Llama Stack since its configuration changed.
+
+. Restart the playground by deleting its pod (starting with `llama-stack-playground`). Wait until it's Ready and Running.
+
++
+image::llamastack-playground-restart.png[Llama Stack Playground restart, 800]
+//TODO: update screenshot with lab user
 
 . Refresh the playground in the browser. Select the **Tools** playground with the **MCP Servers openshift** and expand tools from.
 
 +
-image::llamastack-playground-mcp-openshift.png[LlamaStack MCP OpenShift tool, 800]
+image::llamastack-playground-mcp-openshift.png[Llama Stack MCP OpenShift tool, 800]
 
 . Checkout the list of actions that can performed by MCP:OpenShift tools.
 
 +
-image::llamastack-playground-mcp-openshift-tools.png[LlamaStack MCP OpenShift tool list, 800]
-
+image::llamastack-playground-mcp-openshift-tools.png[Llama Stack MCP OpenShift tool list, 800]
 
 . Select **Regular agent** and try the prompt:
 +
@@ -61,30 +139,33 @@ image::llamastack-playground-mcp-openshift-tools.png[LlamaStack MCP OpenShift to
 list pods in the mcp-openshift namespace
 ----
 
-. Try different agents and prompts. Not all of them work all of the time. This is a common problem with Tool calling and LLMs.
+. Experiment with different agents and prompts.
 
-. Done ✅
+[TIP]
+====
+Not all the agent types and prompts work all of the time. This is a common problem with tool calling and LLMs. In general, larger and more capable models perform more reliably and predictably with tools.
+====
 
-== LlamaStack mcp::github
 
+== Adding the GitHub MCP Server to Llama Stack
 
-In the previous section, we used MCP servers that were already provisioned for us. In this section, we'll:
+In the previous section, we used an MCP server that was already provisioned for us. In this section, we'll:
 
-* Enable access to GitHub repo
-* Deploy https://github.com/github/github-mcp-server[GitHub server,window=_blank]
-* Enable it in LlamaStack
-* Use it in the Playground
+* Enable access to a GitHub repository
+* Deploy the https://github.com/github/github-mcp-server[GitHub MCP server,window=_blank]
+* Enable it in Llama Stack
+* Use it in the playground
 
-First, we need to enable access to our github repo so MCP GitHub tool can interact with it.
+First, we need to enable access to our GitHub repository so our GitHub tools can interact with it.
 
 . **Set up your repository**
-.. https://github.com/rhpds/etx-agentic-ai-gitops[Fork the etx-agentic-ai repository,window=_blank] to your personal GitHub account
+.. For the https://github.com/rhpds/etx-agentic-ai-gitops[lab repository,window=_blank] to your personal GitHub account.
 +
 .GitHub Repo Fork
 image::github-fork.png[GitHub Repo Fork, 400]
 +
 
-.. Ensure that you **Enable Issues** for your fork under **Settings** > **General** > **Features** > **Issues** as they are disabled for forked repos by default
+.. Ensure that you **Enable Issues** for your fork under **Settings** > **General** > **Features** > **Issues** as they are disabled for forked repositories by default.
 +
 .GitHub Repo Enable Issues
 image::github-repo-enable-issues.png[GitHub Repo Enable Issues, 400]
@@ -96,7 +177,7 @@ image::github-repo-enable-issues.png[GitHub Repo Enable Issues, 400]
 
 .. Select **Developer Settings** > **Personal Access Tokens** > **Fine-grained personal access tokens**
 
-.. Select Button **Generate a new token** - give it a token name e.g. __etx-ai__
+.. Select Button **Generate a new token** - give it a token name e.g. __agent-lab__
 
 .. Set **Repository access**
 +
@@ -129,7 +210,6 @@ Save the token for easy access as you'll need to use it later in the lab.
 
 
 . **Clone the repository**
-.. If you're running the lab using your laptop, you can clone the repository locally to your laptop.
 +
 [source,bash,options="wrap",role="execute"]
 ----
@@ -141,47 +221,32 @@ image::github-clone.png[GitHub Repo Clone, 400]
 +
 
 
-.. Done ✅
+. **Deploy GitHub MCP Server**
 
-. **Deploy MCP GitHub Server**
-
-.. In the OpenShift Console, choose project ({etx_agentic_ai_username}.llama-stack) and navigate to Workloads -> Secrets.
-
-.. Click on *Create* (from YAML)
+.. In the OpenShift Console, choose project ({etx_agentic_ai_username}.llama-stack) and select `Quick create` -> `Import YAML`
 
 +
-[source,yaml,options="wrap"]
+image::ocp-import-yaml.png[OpenShift import YAML, 400]
++
+.. Copy and paste the following content:
+
++
+[source,yaml,options="wrap",role="execute"]
 ----
+---
 apiVersion: v1
 kind: Secret
 metadata:
   name: github-credentials-v1
-  namespace: {etx_agentic_ai_username}-llama-stack
 type: Opaque
 stringData:
   # Add your PAT here
-  # Important: not for production use, demo purposes only
   token: <YOUR_GITHUB_PERSONAL_ACCESS_TOKEN>
-----
-+
-
-[TIP]
-====
-Update namespace and your GitHub personal access token you had created earlier
-====
-
-.. In the OpenShift Console, continuing with project {etx_agentic_ai_username}.llama-stack), navigate to Workloads -> Deployments.
-
-.. Click on *Create* and choose YAML view
-
-+
-[source,yaml,options="wrap"]
-----
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: github-mcp-server
-  namespace: {etx_agentic_ai_username}-llama-stack
 spec:
   replicas: 1
   selector:
@@ -211,27 +276,11 @@ spec:
           requests:
             cpu: "200m"
             memory: "256Mi"
-----
-+
-
-[TIP]
-====
-Update namespace
-====
-
-
-.. In the OpenShift Console, continuing with project {etx_agentic_ai_username}.llama-stack), navigate to Networking -> Services.
-
-.. Click on *Create Service*
-
-+
-[source,yaml,options="wrap"]
-----
+---
 apiVersion: v1
 kind: Service
 metadata:
   name: github-mcp-server
-  namespace: {etx_agentic_ai_username}-llama-stack
 spec:
   selector:
     app: github-mcp-server
@@ -241,40 +290,96 @@ spec:
 ----
 +
 
-[TIP]
-====
-Update namespace
-====
+. Replace the token placeholder `<YOUR_GITHUB_PERSONAL_ACCESS_TOKEN>` with your GitHub personal access token you had created earlier.
+
+. Hit `Create`.
+
+. **Add the GitHub tool provider in Llama Stack**
+
+As in the previous section, we'll reference the GitHub MCP server in the Llama Stack configuration.
+
+. Edit the LlamaStack ConfigMap `llama-stack-config`.
+
+. Add the following entry under `tool_groups`. Note that we don't have to edit the tool runtime section since we already added the MCP runtime entry previously.
 
 +
-. **Enable mcp::github in LlamaStack**
-
-[NOTE]
-====
-The configuration is very similar to what we did for add MCP:OpenShift tool earlier.
-====
-
-. Edit the LlamaStack ConfigMap to add MCP:GitHub tool.
-
-. Add in the tool group.
-
-+
-[source,yaml,options="wrap"]
+[source,yaml,options="wrap",role="execute"]
 ----
-    tool_groups:
-    - toolgroup_id: mcp::github
-      provider_id: model-context-protocol
-      mcp_endpoint:
-        uri: http://github-mcp-server:80/sse
+- toolgroup_id: mcp::github
+  provider_id: model-context-protocol
+  mcp_endpoint:
+    uri: http://github-mcp-server:80/sse
 ----
 +
 
-[NOTE]
-====
-Notice that the URI for the MCP Server uses Server Sent Events (/sse).
-====
+. For reference, your run.yaml should now look like this:
++
+[source,yaml,option="wrap"]
+----
+# Llama Stack configuration
+version: '2'
+image_name: rh
+apis:
+- inference
+- tool_runtime
+- agents
+- safety
+- vector_io
+models:
+  - metadata: {}
+    model_id: granite-3-2-8b-instruct
+    provider_id: vllm-granite-3-2-8b-instruct
+    provider_model_id: granite-3-2-8b-instruct
+    model_type: llm
+providers:
+  inference:
+  - provider_id: vllm-granite-3-2-8b-instruct
+    provider_type: "remote::vllm"
+    config:
+      url: https://litellm-prod.apps.maas.redhatworkshops.io/v1
+      context_length: 4096
+      api_token: ${env.DEFAULT_MODEL_API_TOKEN}
+      tls_verify: true
+  tool_runtime:
+  - provider_id: tavily-search
+    provider_type: remote::tavily-search
+    config:
+      api_key: ${env.TAVILY_API_KEY}
+      max_results: 3
+  - provider_id: model-context-protocol
+    provider_type: remote::model-context-protocol
+    config: {}
+  agents:
+  - provider_id: meta-reference
+    provider_type: inline::meta-reference
+    config:
+      persistence_store:
+        type: sqlite
+        db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/rh}/agents_store.db
+      responses_store:
+        type: sqlite
+        db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/rh}/responses_store.db
+server:
+  port: 8321
+tools:
+  - name: builtin::websearch
+    enabled: true
+tool_groups:
+- provider_id: tavily-search
+  toolgroup_id: builtin::websearch
+- toolgroup_id: mcp::openshift
+  provider_id: model-context-protocol
+  mcp_endpoint:
+    uri: http://ocp-mcp-server.mcp-openshift.svc.cluster.local:8000/sse
+- toolgroup_id: mcp::github
+  provider_id: model-context-protocol
+  mcp_endpoint:
+    uri: http://github-mcp-server:80/sse
+----
 
-. Refresh the playground in the browser. Select the **Tools** playground with the **MCP Servers github** and **Regular agent**. Try the prompt (replace the github user with your user).
+. Restart the playground by deleting its pod (starting with `llama-stack-playground`). Wait until it's Ready and Running.
+
+. Refresh the playground in the browser. Select the **Tools** playground with the **MCP Servers github** and **Regular agent**. Try the prompt (replace the GitHub user with your user).
 +
 [source,bash,options="wrap",role="execute"]
 ----
@@ -284,9 +389,9 @@ List the branches from ${YOUR_GITHUB_USER}/etx-agentic-ai-gitops repo.
 image::llama-playground-mcp-github-chat.png[LlamaStack MCP GitHub, 800]
 +
 
-. Try different agents and prompts. Not all of them work all of the time. This is a common problem with Tool calling and LLMs
+. Experiment with different agents and prompts.
 
-. Checkout the list of actions that can performed by MCP:github tools.
+. Check the list of tools that can invoked via the MCP:github tool provider.
 
 +
 image::llamastack-playground-mcp-github-tools.png[LlamaStack MCP OpenShift tool list, 800]
@@ -294,7 +399,7 @@ image::llamastack-playground-mcp-github-tools.png[LlamaStack MCP OpenShift tool 
 . *Create a GitHub issue*
 
 +
-.. Try this prompt (replace the github user with your user).
+.. Try this prompt (replace the GitHub user with your user).
 +
 [source,bash,options="wrap",role="execute"]
 ----
@@ -308,6 +413,16 @@ image::playground-github-issue.png[LlamaStack Playground Github issue prompt, 80
 
 +
 image::github-issue.png[Github issue, 800]
-+
 
-. Done ✅
+Great, we were able to have the LLM create a GitHub issue for us through a simple chat interface! We're now ready to move on from interactive prototyping to agent development.
+
+== Summary
+
+In this module, we covered the basics of Llama Stack and agent prototyping:
+
+- We introduced Llama Stack and interacted with it via the Llama Stack Playground.
+- We enabled the websearch tool in Llama Stack and used it to perform simple web search queries.
+- We reviewed the basics of tool calling and Regular vs. ReAct agents.
+- We introduced MCP and unlocked Kubernetes and GitHub tools in Llama Stack using pre-built MCP servers.
+
+We've now got all the pieces we need to build our CI/CD agent. Let's jump right in!
