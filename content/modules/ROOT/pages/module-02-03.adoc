@@ -144,7 +144,7 @@ image::llamastack-playground-mcp-openshift-tools.png[Llama Stack MCP OpenShift t
 +
 [source,bash,options="wrap",role="execute"]
 ----
-list pods in the mcp-openshift namespace
+List the pods in the mcp-openshift namespace.
 ----
 
 . Experiment with different agents and prompts.
