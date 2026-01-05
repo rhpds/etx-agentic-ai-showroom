@@ -1,5 +1,7 @@
 = The Lab
 
+include::vars.adoc[]
+
 == Prerequisites
 
 Before starting this lab, ensure you have a **GitHub Account**, which allows you to fork repositories.
@@ -7,6 +9,21 @@ Before starting this lab, ensure you have a **GitHub Account**, which allows you
 == Lab Setup
 
 You have access to a fully-featured OpenShift cluster with **Red Hat OpenShift AI (RHOAI)**, an OpenShift add-on that comes with a number of tools for building, running, and managing AI workloads.
+
+This OpenShift cluster instance is shared among all participants in this lab. Each participant has dedicated projects/namespaces in this cluster.
+
+You have been assigned *{etx_agentic_ai_username}*.
+
+To get started, please log in with your user using both in the *Terminal* and the *OCP Console*.
+
+* *Username:* {etx_agentic_ai_username}
+* *Password:* {etx_agentic_ai_password}
+
+[source,bash,options="wrap",role="execute",subs="attributes+"]
+----
+{etx_agentic_ai_login}
+----
+
 
 == Required Skills
 
