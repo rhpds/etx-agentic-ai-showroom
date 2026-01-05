@@ -61,7 +61,7 @@ llama-stack-client inspect version
 [source,bash,options="wrap"]
 ----
 INFO:httpx:HTTP Request: GET http://localhost:8321/v1/version "HTTP/1.1 200 OK"
-VersionInfo(version='0.2.15')
+VersionInfo(version='0.2.22')
 ----
 
 . If you need help with the client commands, take a look at
@@ -118,6 +118,8 @@ Total models: 1
 === Playground: Llama Stack User Interface
 
 Llama Stack comes with a simple UI called Playground. For this lab, a Playground instance is already deployed for each user.
+
+Select the *{etx_agentic_ai_username}-llama-stack* namespace.
 
 . Checkout the Playground pod.
 +
