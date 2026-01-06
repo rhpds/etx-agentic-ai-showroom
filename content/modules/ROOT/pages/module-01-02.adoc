@@ -9,9 +9,9 @@ Before starting this lab, ensure you have a **GitHub Account**, which allows you
 
 == Lab Setup
 
-You have access to a fully-featured OpenShift cluster with **Red Hat OpenShift AI (RHOAI)**, an OpenShift add-on that comes with a number of tools for building, running, and managing AI workloads.
+You have access to a fully-featured **Red Hat AI** cluster, an AI platform running on OpenShift that comes with a number of tools for building, running, and managing AI workloads.
 
-This OpenShift cluster instance is shared among all participants in this lab. Each participant has dedicated projects/namespaces in this cluster.
+This Red Hat AI cluster instance is shared among all participants in this lab. Each participant has dedicated projects/namespaces in this cluster.
 
 You have been assigned *{etx_agentic_ai_username}*.
 

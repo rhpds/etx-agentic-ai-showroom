@@ -21,7 +21,7 @@ To get started, we'll enable the built-in websearch tool with our own Tavily API
 
 == Configuring Llama Stack
 
-As part of OpenShift AI, a Llama Stack instance is represented by the LlamaStackDistribution custom resource (CR) that defines the Llama Stack server configuration including:
+As part of Red Hat AI, a Llama Stack instance is represented by the LlamaStackDistribution custom resource (CR) that defines the Llama Stack server configuration including:
 
 * **Server Configuration**: Which distribution to use (including built-in tools etc.)
 * **Container Specifications**: Port, environment variables, resource limits

@@ -1,5 +1,5 @@
 :imagesdir: ../assets/images
-= From Playground to Prototype - Building Your Agent in OpenShift AI
+= From Playground to Prototype - Building Your Agent in Red Hat AI
 
 [IMPORTANT]
 .In this lab

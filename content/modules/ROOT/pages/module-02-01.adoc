@@ -24,7 +24,7 @@ In this chapter we will cover agent prototyping with Llama Stack. Specifically, 
 
 == Llama Stack
 
-https://llama-stack.readthedocs.io/en/latest/[Llama Stack,window=_blank] is an open-source framework and API layer for building and running generative AI applications. It provides a unified set of APIs for inference, RAG, agents, tools, safety, evals, and telemetry. Llama Stack is one of the components included in OpenShift AI.
+https://llama-stack.readthedocs.io/en/latest/[Llama Stack,window=_blank] is an open-source framework and API layer for building and running generative AI applications. It provides a unified set of APIs for inference, RAG, agents, tools, safety, evals, and telemetry. Llama Stack is one of the components included in Red Hat AI.
 
 There's a Llama Stack instance that's running in your lab environment. We will use this instance
 
