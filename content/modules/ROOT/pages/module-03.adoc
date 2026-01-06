@@ -170,7 +170,15 @@ image::../assets/images/argo-route.png[]
 
 We will now test the MCP and model integrations, which we've tested already via the playground (as designed!) in the context of your new agent that we've just deployed.
 
-The pipeline demo pipeline we've prepared builds a java app that fails to deploy successfuly, which triggers an agent call to open a github issue with your forked test repository.
+This demo application pipeline models a common CI/CD flow and adds an automated recovery aid:
+
+* Fetch source: git-clone pulls your repo and revision
+
+* Build image: buildah builds and pushes the container image
+
+* Deploy: oc rollout status verifies the deployment
+
+* Finally: On failure, a finally step triggers the agent service with pod context.
 
 === Apply the pipeline resource
 
@@ -328,3 +336,14 @@ oc get taskrun -l tekton.dev/pipelineRun=java-app-build-run-{UNIQUE_ID}
 ----
 +
 . Verify in your forked repository that the issue was successfully generated.
+
+
+== What’s Next
+
+With the agent running as a service and integrated with the pipeline trigger, you have the foundation for a production rollout. You are now setup for a scenario where you have a new ticket coming in and you need to update your agent and your MTTR is fast due to the automation. Perhaps you are event adventurous enough to add the agent tooling itself as a `finally` call in your agent build pipeline to catch and resolve errors quickly. We will not be doing that today, so that will be left to the reader, but in the next module, we will discuss hardening, observability, and promotion flows.
+
+== Next Steps
+
+With your agent now running as a service and integrated with the pipeline trigger, you have established the foundation for a production-ready workflow. This setup enables rapid response to failures, as new issues are automatically created in your GitHub repository, reducing mean time to resolution (MTTR).
+
+In the next module, you will learn how to further harden your deployment, add observability, and implement promotion flows to ensure your agent remains robust and reliable as you move toward production.
