@@ -1,35 +1,16 @@
 :imagesdir: ../assets/images
 = From Playground to Prototype - Building Your Agent in OpenShift AI
 
-include::vars.adoc[]
-
-[NOTE]
-====
-Persona: AI Engineer (primary). Also relevant: Data Scientist.
-====
-
 [IMPORTANT]
 .In this lab
 ====
-You will open an OpenShift AI Workbench, carry over decisions and artifacts from the Llama Stack Playground work in xref:module-04.adoc[the previous module], then iteratively step through `notebooks/agent-prototyping.ipynb` to codify a working agentic flow. The lab ends by creating a GitHub issue in your repository from the agent’s final output. The following lesson will take this prototype to production.
+You will build an agent, and manage it through ArgoCD. You will then create a pipeline to trigger the agent to create a GitHub issue in your forked repository from previous modules.
 ====
 
-== Prerequisites
-
-[TIP]
-====
-Have these ready from your Playground session:
-
-* Chosen model and endpoint (Llama Stack or MaaS)
-* The refined system prompt and example user prompts
-* Any tool choices (e.g., web search/Tavily) and API keys
-* Parameters you validated
-====
-
-.Security reminders
-* Keep PAT scopes minimal; store tokens securely
-* Do not commit secrets or tokens to notebooks or repo; use pre-commit hooks to check for secrets
-* Prefer Vault-managed secrets where possible
+// .Security reminders
+// * Keep PAT scopes minimal; store tokens securely
+// * Do not commit secrets or tokens to notebooks or repo; use pre-commit hooks to check for secrets
+// * Prefer Vault-managed secrets where possible
 
 == Git clone repository locally
 
@@ -176,7 +157,7 @@ oc get apps -o wide
 
 [source,bash,options="wrap",role="execute"]
 ----
-oc get routes | grep argo
+oc -n user{your-user-number}-ai-agent get routes
 ----
 
 or in the UI:
@@ -187,14 +168,13 @@ image::../assets/images/argo-route.png[]
 
 == Test your agent's function with a demonstrative pipeline
 
-We will now test the MCP and model integrations, which we've tested already via the playground, in the context of your new agent that we've just deployed.
+We will now test the MCP and model integrations, which we've tested already via the playground (as designed!) in the context of your new agent that we've just deployed.
 
 The pipeline demo pipeline we've prepared builds a java app that fails to deploy successfuly, which triggers an agent call to open a github issue with your forked test repository.
 
 === Apply the pipeline resource
 
 Using your terminal or the (+) button in the web console, apply the following pipeline resource with your user number substituted into the metadata/namespace placeholder:
-
 
 [source,yaml,options="wrap",role="execute"]
 ----
