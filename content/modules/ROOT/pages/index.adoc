@@ -1,3 +1,4 @@
+:imagesdir: ../assets/images
 = ETX AI Super Lab 2 (Agentic AI)
 
 == Lab Overview

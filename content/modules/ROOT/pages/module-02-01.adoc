@@ -1,3 +1,4 @@
+:imagesdir: ../assets/images
 = Introducing Llama Stack
 
 include::vars.adoc[]
@@ -45,7 +46,7 @@ For the endpoint of the Llama Stack distribution server enter:
 +
 [source,bash,options="wrap",role="execute",subs="attributes+"]
 ----
-http://{etx_agentic_ai_username}-llama-stack-service.{etx_agentic_ai_username}-llama-stack.svc.cluster.local:8321
+http://{YOUR_USER_NAME}-llama-stack-service.{YOUR_USER_NAME}-llama-stack.svc.cluster.local:8321
 ----
 +
 When prompted for the API key, leave the value empty and hit enter.
@@ -107,7 +108,7 @@ Available Models
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ model_type                   ┃ identifier                                               ┃ provider_resource_id                                     ┃ metadata               ┃ provider_id                   ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ llm                          │ granite-31-2b-instruct                                   │ granite-31-2b-instruct                                   │                        │ vllm                          │
+│ llm                          │ granite-3-2-8b-instruct                                   │ granite-3-2-8b-instruct                                   │                        │ vllm                          │
 └──────────────────────────────┴──────────────────────────────────────────────────────────┴──────────────────────────────────────────────────────────┴────────────────────────┴───────────────────────────────┘
 
 Total models: 1
@@ -117,7 +118,7 @@ Total models: 1
 
 === Playground: Llama Stack User Interface
 
-Llama Stack comes with a simple UI called Playground. For this lab, a Playground instance is already deployed for each user.
+Llama Stack comes with a simple UI called Playground. For this lab, a Playground instance is already deployed for each user within the `userx-llama-stack` namespace. Substitute `x` for your individual user number.
 
 Select the *{etx_agentic_ai_username}-llama-stack* namespace.
 

@@ -1,3 +1,4 @@
+:imagesdir: ../assets/images
 = Evaluation and Observability
 
 include::vars.adoc[]

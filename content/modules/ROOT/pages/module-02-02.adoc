@@ -1,3 +1,4 @@
+:imagesdir: ../assets/images
 = Tools and Agents
 
 include::vars.adoc[]
@@ -169,9 +170,9 @@ kind: Secret
 apiVersion: v1
 metadata:
   name: new-tavily-search-key
-  namespace: {etx_agentic_ai_username}-llama-stack
+  namespace: {YOUR_USER_NAME}-llama-stack
 stringData:
-  tavily-search-api-key: PLACEHOLDER
+  tavily-search-api-key: {PLACEHOLDER}
 type: Opaque
 ----
 

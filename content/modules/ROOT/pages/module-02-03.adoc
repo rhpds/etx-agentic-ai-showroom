@@ -1,3 +1,4 @@
+:imagesdir: ../assets/images
 = Model Context Protocol
 
 include::vars.adoc[]
@@ -279,6 +280,7 @@ spec:
   ports:
   - port: 80
     targetPort: 8080
+---
 ----
 +
 

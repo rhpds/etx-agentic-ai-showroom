@@ -1,3 +1,4 @@
+:imagesdir: ../assets/images
 = From Playground to Prototype - Building Your Agent in OpenShift AI
 
 include::vars.adoc[]
@@ -13,16 +14,7 @@ Persona: AI Engineer (primary). Also relevant: Data Scientist.
 You will open an OpenShift AI Workbench, carry over decisions and artifacts from the Llama Stack Playground work in xref:module-04.adoc[the previous module], then iteratively step through `notebooks/agent-prototyping.ipynb` to codify a working agentic flow. The lab ends by creating a GitHub issue in your repository from the agent’s final output. The following lesson will take this prototype to production.
 ====
 
-[NOTE]
-====
-Estimated time: 60–90 minutes
-====
-
 == Prerequisites
-
-// * Completed xref:module-00.adoc[environment setup] (cluster access, repo fork, tokens)
-// * Completed xref:module-04.adoc[Llama Stack] (server available, prompts tested in Playground)
-// * Fine-grained GitHub PAT from xref:module-04.adoc[previous module]
 
 [TIP]
 ====
@@ -39,594 +31,320 @@ Have these ready from your Playground session:
 * Do not commit secrets or tokens to notebooks or repo; use pre-commit hooks to check for secrets
 * Prefer Vault-managed secrets where possible
 
-== Open an OpenShift AI Workbench
+== Git clone repository locally
 
-. In the OpenShift console, switch to your team namespace/project (e.g., `agent-demo`).
-. Create a Workbench with a CUDA-enabled image and a GPU or appropriate CPU flavor as provided by your cluster administrator.
-. Start the Workbench server and open JupyterLab.
-. In a terminal inside JupyterLab, clone your fork (or pull latest):
+In your own environment, or in a workbench image terminal if preferred:
 
-[source,bash,options="wrap",role="execute"]
-----
-cd ${HOME}
-git clone https://github.com/redhat-ai-services/etx-agentic-ai.git
-cd etx-agentic-ai
-----
-
-[NOTE]
-====
-If you use a persistent volume, your repo may already exist. Ensure it’s up to date before proceeding.
-====
-
-== Load the Agent Notebook
-
-. In JupyterLab, open `notebooks/agent-prototyping.ipynb`.
-. We will execute cells top-to-bottom, pausing at each to reflect how it builds on the prior step and prepares the next.
-
-== Configure Notebook Environment (matches notebook)
-
-. Login to OpenShift if you are not already logged in
+. Authenticate to the cluster with your user credentials.
+. Clone your previously created repository fork:
 +
 [source,bash,options="wrap",role="execute"]
 ----
-oc login --server=https://api.${CLUSTER_NAME}.${BASE_DOMAIN}:6443 -u admin -p ${ADMIN_PASSWORD}
-----
-
-. First, expose the Llama Stack service to your Workbench via a port-forward:
-+
-[source,bash,options="wrap",role="execute"]
-----
-# From a Workbench Terminal
-oc project llama-stack
-oc get svc llamastack-with-config-service
+cd ${DESIRED_DIRECTORY_LOCATION}
+git clone https://github.com/[YOUR-GITHUB-ID]/etx-agentic-ai-gitops.git
+cd etx-agentic-ai-gitops
 ----
 +
-[source,bash,options="wrap",role="execute"]
-----
-oc -n llama-stack port-forward svc/llamastack-with-config-service 8321:8321 2>&1>/dev/null &
-----
-+
-[NOTE]
-====
-This keeps a local tunnel from your Workbench pod to the service on port 8321. Leave it running for the duration of the lab. If your Llama Stack is configured with TLS, you can still use port-forward; adjust the `LLAMA_STACK_URL` scheme to `https` accordingly.
-====
+. Authenticate to github, if not already, using a personal access token (separate from the one previously created in the workshop) with at least `Read and Write` permission to `Contents` of the above repository.
 
-[TIP]
-====
-Reset/retry tips:
+== Load the Agent file
 
-* If `! pip install -qr requirements.txt` upgrades dependencies, restart the Jupyter kernel
-* Stop any existing port-forward (`Ctrl+C`) before starting a new one
-====
+. In your local preferred environment, or within the workbench image IDE, open `agent/code/agent.py`.
+// changes to file including your github user id, username
 
-. Apply required RBAC so the MCP server can read Tekton pipeline pods in `demo-pipeline`:
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc apply -f infra/tenants/demo-pipeline/base/sno/templates/agent-rolebinding.yaml | cat
-----
+. Git commit and push changes to your fork.
 
-. Change directory to the `notebooks` folder:
-+
-[source,bash,options="wrap",role="execute"]
-----
-cd notebooks
-----
+== Trigger pipeline to build the agent image
 
-. Edit the `env` if necessary to match your Playground configuration and deployment settings.
-+
-[IMPORTANT]
-====
-The notebook loads this file directly with `load_dotenv('env')`. Name the file exactly `env` (no dot). If you prefer `.env`, change the notebook call to `load_dotenv('.env')`.
-====
+. In your chosen terminal environment, create a PipelineRun using the following command:
 
-. In JupyterLab, open the `agent-prototyping.ipynb` notebook file to begin your work.
-
-== Step Through the Notebook Iteratively
-
-Use the following guideposts as you run each section. Run all cells in a section before proceeding to the next.
-
-=== Section 1: Getting Started with Llama Stack
-
-* Run (CTRL+ENTER): `! pip install -qr requirements.txt` to install dependencies.
-* Run: The imports cell.
-* Run: `load_dotenv('env')` to load `LLAMA_STACK_URL`, `LLM_MODEL_ID`, etc.
-* Run: The server connection cell to create `LlamaStackClient`, list models, and print `model_id`.
-* Run: The sampling params cell to set `temperature`, `max_tokens`, `sampling_params`.
-* Run: The quick chat completion sanity check.
-
-* Expected: Model list printed, sampling params displayed, and a reply from the model.
-
-=== Section 2: Simple Agent with Tool Calling
-
-* Run: Define `Agent` with `tools=['builtin::websearch']` and `instructions`.
-* Run: Define `run_session(...)` helper.
-* Run: Provide `user_prompts` (e.g., latest OpenShift version) and call `run_session(...)`.
-
-* Expected: Streamed logs from `EventLogger` and a final answer using web search.
-
-Custom client tool (Kubernetes logs):
-
-* Run: Kubernetes client setup (`load_incluster_config()`, `CoreV1Api`).
-* Gather targets and set variables:
-** Option A (Web Console): Switch to the `demo-pipeline` project. Navigate to Pipelines > PipelineRuns. Open the most recent failed run; from its details, click the Pod name for the failed Task to view its Pod. Copy the Pod name and container name.
-** Option B (Terminal): Use the `demo-pipeline` namespace and find the most recent failed PipelineRun and its failed Task’s Pod:
-+
-[source,bash,options="wrap",role="execute"]
-----
-# list pods in your namespace
-oc -n <your-namespace> get pods
-
-# show container names for a specific pod
-oc -n <your-namespace> get pod <pod-name> -o jsonpath='{.spec.containers[*].name}{"\n"}'
-----
-** Then set in the notebook:
-+
-[source,python]
-----
-pod_name = "<pod-name>"
-namespace = "<your-namespace>"
-container_name = "<container-name>"
-----
-* Run: `get_pod_log_test(...)` to verify access.
-* Run: Define `@client_tool get_pod_log(...)`.
-* Run: Agent using `tools=[get_pod_log]` and analyze logs with `run_session(...)`.
-
-TIP: If a 403 Forbidden occurs when fetching logs, the PipelineRun may have already completed or permissions aren’t applied. Re-run the pipeline in `demo-pipeline` (from Pipelines UI or `tkn` CLI), wait for it to fail, then re-run the notebook cells for log retrieval.
-
-* Expected: Log text returned and summarized by the agent.
-
-=== Section 3: Prompt Chaining
-
-* Run: Define agent with `tools=[get_pod_log, 'builtin::websearch']`.
-* Run: The chained `user_prompts` and `run_session(...)`.
-
-* Expected: Fetches logs → web search → summarized recommendations.
-
-=== Section 4: ReAct
-
-* Run: Define `ReActAgent` with `tools=[get_pod_log, 'builtin::websearch']` and `response_format` using `ReActOutput.model_json_schema()`.
-* Run: The `user_prompts` and `run_session(...)`.
-
-* Expected: Reason→Act loops with dynamic tool selection.
-
-=== Section 5: MCP Tools and Full Flow (OpenShift + Web + GitHub)
-
-* Run: Validate/auto-register MCP tools (e.g., `mcp::openshift`).
-* Run: Define full ReAct agent using `tools=["mcp::openshift", "builtin::websearch", "mcp::github"]`.
-
-* Edit: In the provided prompt, replace the repo owner with your fork (`"owner":"your-gh-user","repo":"etx-agentic-ai"`).
-+
-image::full-react-agent-repo-owner.png[Change the GitHub repo owner from `redhat-ai-services` to your GitHub username, 700]
-* Run: Execute `run_session(...)` to analyze logs → search → create GitHub issue.
-
-* Expected: Issue is created by the agent; capture the URL from the output.
-
-=== Optional: Persist Run Artifacts
-
-* Save a small report with inputs, parameters, and outputs so it can be attached to an issue.
-
-[source,python]
-----
-import json, pathlib, time
-from os import environ
-
-report = {
-    "timestamp": int(time.time()),
-    "model": environ.get("LLM_MODEL_ID"),
-    "endpoint": environ.get("LLAMA_STACK_URL"),
-    "sampling_params": {
-        "temperature": environ.get("TEMPERATURE"),
-        "max_tokens": environ.get("MAX_TOKENS"),
-    },
-    "task": "<your final user task>",
-    "final_answer": "<paste the agent’s final answer or summary>",
-}
-pathlib.Path("artifacts").mkdir(exist_ok=True)
-with open("artifacts/agent_run_report.json", "w") as f:
-    json.dump(report, f, indent=2)
-print("Saved artifacts/agent_run_report.json")
-----
-
-== Verify the GitHub Issue (created by the agent)
-
-image::github-issue-created.png[Example of a GitHub issue created by the agent’s full ReAct flow, 800]
-
-The full MCP-based ReAct run should create the issue automatically via the GitHub MCP server. Capture the URL from the streamed logs or agent output and record it in your lab notes.
-
-== Validation Checklist
-
-* Workbench server is running; repo is up to date
-* Notebook executed end-to-end with no unresolved errors
-* `artifacts/agent_run_report.json` exists and summarizes the run
-* GitHub issue created; URL recorded
-
-== Artifacts to carry forward
-
-* `notebooks/env` values used (LLAMA_STACK_URL, LLM_MODEL_ID, TEMPERATURE, MAX_TOKENS)
-* The final agent prompt and tool choices (builtin::websearch, mcp::openshift, mcp::github)
-* `artifacts/agent_run_report.json` (if created)
-* URL of the created GitHub issue
-
-== Commit Your Work
+NOTE: Ensure to replace the values in brackets with the actual values of your user number and forked repository location.
 
 [source,bash,options="wrap",role="execute"]
 ----
-git add notebooks/agent-prototyping.ipynb artifacts/agent_run_report.json || true
-git commit -m "lab: agent prototype run artifacts"
-git push
-----
-
-== What’s Next
-
-Great work—your agent prototype is now codified and traceable via a GitHub issue. In the next lesson, we’ll take this into production: xref:module-04.adoc[Rolling out the Agent].
-
-
-// lightbox - for images - FIXME need to make the include::partial$lightbox.hbs WORK
-++++
-<div id="myModal" class="modal">
-    <span class="close cursor" onclick="closeModal()">&times;</span>
-    <div class="modal-content" onclick="closeModal()">
-        <!--suppress HtmlRequiredAltAttribute as this will be set when selecting the image via JavaScript,
-        RequiredAttributes as src will be set by when selecting the image via JavaScript -->
-        <img id="imageinmodal">
-    </div>
-</div>
-<script>
-    function openModal() {
-        document.getElementById("myModal").style.display = "block";
-        // use overflowY = hidden to prevent the body from scrolling when modal is visible
-        // doesn't work with overscroll-behavior, as this would work only when the modal has a scrollbar
-        document.getElementsByTagName("body")[0].style.overflowY = "hidden";
-    }
-
-    function closeModal() {
-        document.getElementById("myModal").style.display = "none";
-        document.getElementsByTagName("body")[0].style.overflowY = "auto";
-    }
-
-    document.querySelectorAll('.imageblock img').forEach(element => {
-        if (element.closest('a') === null) {
-            element.className += " lightbox";
-            element.addEventListener('click', evt => {
-                document.getElementById("imageinmodal").setAttribute("src", evt.currentTarget.getAttribute("src"))
-                document.getElementById("imageinmodal").setAttribute("alt", evt.currentTarget.getAttribute("alt"))
-                openModal();
-            })
-        }
-    });
-</script>
-<style>
-    /* The Modal (background) */
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 10;
-        padding-top: 5vh;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        backdrop-filter: blur(3px);
-        background-color: rgba(30, 30, 30, 0.8);
-    }
-    img.lightbox {
-        cursor: pointer;
-    }
-    /* Modal Content */
-    .modal-content {
-        position: relative;
-        margin: auto;
-        padding: 0;
-        width: 90%;
-        max-height: 90vh;
-        cursor: pointer;
-    }
-
-    .modal-content img {
-        width: auto;
-        height: auto;
-        max-width: 90vw;
-        max-height: 90vh;
-        min-width: 90vw;
-        min-height: 90vh;
-        display: block;
-        margin-right: auto;
-        margin-left: auto;
-        object-fit: contain;
-    }
-
-    /* The Close Button */
-    .close {
-        color: white;
-        position: absolute;
-        top: 10px;
-        right: 25px;
-        font-size: 35px;
-        font-weight: bold;
-    }
-
-    .close:hover,
-    .close:focus {
-        color: #999;
-        text-decoration: none;
-        cursor: pointer;
-    }
-</style>
-++++
-
-== From Prototype to App: Deploying the Agent as a Service
-
-[NOTE]
-====
-Persona: Platform Engineer (primary). Also relevant: AI Engineer.
-====
-
-[IMPORTANT]
-.In this lab
-====
-You will turn the agent you prototyped in the previous module into a running service on OpenShift. We will deploy the `ai-agent` tenant, build and expose the FastAPI app, and wire the Tekton pipeline trigger so failures send context to the agent which then creates a GitHub issue.
-====
-
-[NOTE]
-====
-Estimated time: 60–90 minutes
-====
-
-== Objectives
-
-* Deploy the `ai-agent` tenant resources
-* Point build configs to your GitHub fork
-* Build and roll out the agent service (FastAPI)
-* Verify connectivity to Llama Stack from the app
-* Wire the pipeline trigger so failures call the agent
-* Validate end-to-end by creating a GitHub issue from a failure
-
-== Prerequisites
-
-// * Completed xref:module-05.adoc[Module 05] with a working agent flow in the notebook
-* Your repo fork is up to date and the cluster GitOps points to it
-* Llama Stack server reachable inside the cluster (module 04 deployment)
-
-== Deploy the ai-agent Tenant
-
-* Confirm the project exists and resources are present:
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc get ns ai-agent
-oc -n ai-agent get deploy,svc,route,cm,sa,rolebinding,secret
-----
-
-* If resources are missing, ensure your GitOps/App-of-Apps includes the tenant. Then sync in Argo CD.
-
-== Point to Your GitHub Fork and Correct the Webhook Path
-
-By default the tenant and Helm chart reference `redhat-ai-services/etx-agentic-ai` and post to `/webhook`, while the FastAPI app exposes `/report-failure`.
-
-* Set your GitHub username:
-+
-[source,bash,options="wrap",role="execute"]
-----
-export YOUR_GITHUB_USER=your-gh-user
-export YOUR_FORK=https://github.com/${YOUR_GITHUB_USER}/etx-agentic-ai.git
-----
-
-* Update the tenant Tekton Pipeline to use your fork and the correct endpoint:
-+
-[source,bash,options="wrap",role="execute"]
-----
-sed -i "s#https://github.com/redhat-ai-services/etx-agentic-ai.git#${YOUR_FORK}#g" \
-  infra/tenants/ai-agent/base/sno/templates/pipeline.yaml
-
-# Use the app's actual endpoint
-sed -i "s#/webhook#/report-failure#g" \
-  infra/tenants/ai-agent/base/sno/templates/pipeline.yaml
-----
-
-* Update the Job that triggers a PipelineRun so it also uses your fork:
-+
-[source,bash,options="wrap",role="execute"]
-----
-sed -i "s#https://github.com/redhat-ai-services/etx-agentic-ai.git#${YOUR_FORK}#g" \
-  infra/tenants/ai-agent/base/sno/templates/job.yaml
-----
-
-* (Optional, if using the Helm chart locally) Update the chart defaults:
-+
-[source,bash,options="wrap",role="execute"]
-----
-sed -i "s#https://github.com/redhat-ai-services/etx-agentic-ai.git#${YOUR_FORK}#g" code/chart/values.yaml
-sed -i "s#/webhook#/report-failure#g" code/chart/values.yaml
-----
-
-* Commit and push changes so GitOps applies them:
-+
-[source,bash,options="wrap",role="execute"]
-----
-git add .
-git commit -m "tenant(ai-agent): use my fork and correct webhook endpoint"
-git push
-----
-
-== Ensure Secrets and Config
-
-* Verify `agent-config` points to your Llama Stack service. Defaults to the in-cluster service:
-+
-`infra/tenants/ai-agent/base/sno/templates/configmap.yaml`
-+
-[source,yaml]
-----
-data:
-  LLAMA_STACK_URL: "http://llamastack-with-config-service.llama-stack.svc.cluster.local:8321"
-  MODEL_ID: "llama-4-scout-17b-16e-w4a16"
-  TEMPERATURE: "0.0"
-  MAX_TOKENS: "5000"
-----
-
-* If needed for your Llama Stack config, hydrate any missing secrets (GitHub, Tavily) as per module 04/05.
-
-== Build and Roll Out the App
-
-* Trigger the build PipelineRun via the provided Job (creates a new run):
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc -n ai-agent create -f infra/tenants/ai-agent/base/sno/templates/job.yaml
-----
-
-* Watch the PipelineRun in the OpenShift Console (Pipelines) until tasks complete.
-
-* Verify the Deployment rolls out:
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc -n ai-agent rollout status deploy/ai-agent
-oc -n ai-agent get pods
-----
-
-* Get the route and test health:
-+
-[source,bash,options="wrap",role="execute"]
-----
-ROUTE=$(oc -n ai-agent get route ai-agent -o jsonpath='{.spec.host}')
-curl -s http://${ROUTE}/health | cat
-----
-
-[TIP]
-====
-Reset/retry tips:
-
-* If `pip install` upgraded dependencies earlier, restart the Jupyter kernel before re-running notebook cells (module 05)
-* Stop previous port-forward (`Ctrl+C`) before starting a new one
-* If a PipelineRun is stuck, cancel and start a fresh run; ensure Workspace PVC is recreated when using `generateName`
-====
-
-== Pipeline overview
-
-This demo application pipeline models a common CI/CD flow and adds an automated recovery aid:
-
-* Fetch source: `git-clone` pulls your repo and revision
-* Build image: `buildah` builds and pushes the container image
-* Deploy: `oc rollout status` verifies the deployment
-* Finally: On failure, a `finally` step triggers the agent service with pod context
-
-// Coming from xref:module-05.adoc[Module 05]: You codified the agent and validated the flow in a Workbench. Here we connect that flow to your pipeline so failures automatically notify the agent.
-
-== Wire the Pipeline Trigger
-
-The Tekton `agent-service-build` Pipeline includes a `finally` step that posts a failure payload to the agent service.
-
-* Confirm the `finally` step now points to `/report-failure` and `namespace: ai-agent` in:
-+
-`infra/tenants/ai-agent/base/sno/templates/pipeline.yaml`
-
-* Ensure the `ai-agent` service account/rolebinding exist in the `ai-agent` namespace:
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc -n ai-agent get sa pipeline
-oc -n ai-agent get rolebinding openshift-pipelines-edit
-----
-
-== End-to-End Test
-
-To simulate a build failure and test the agent integration, use the pre-configured `bad` revision.
-
-*Option 1: Web Console*
-
-1. In the OpenShift Web Console, navigate to **Pipelines** in the `demo-pipeline` namespace.
-2. Click on the `agent-service-build` pipeline.
-3. Click **Start** to create a new PipelineRun.
-4. In the parameters, set the `GIT_REVISION` value to `bad` to use the intentionally broken revision.
-5. Start the PipelineRun.
-
-*Option 2: Run a pre-created Job*
-
-From the console, create a job from YAML using the `infra/tenants/demo-pipeline/base/sno/templates/job-bad.yaml` as a reference, or run via CLI:
-
-[source,bash,options="wrap",role="execute"]
-----
-oc -n demo-pipeline create -f infra/tenants/demo-pipeline/base/sno/templates/job-bad.yaml
-----
-
-Feel free to use the web console or CLI to trigger the job.
-
-*Option 3: One-off PipelineRun via CLI*
-
-Start a one-off PipelineRun with the `bad` ref:
-
-[source,bash,options="wrap",role="execute"]
-----
-oc -n demo-pipeline create -f - <<'EOF'
+oc -n user[YOUR_USER_NUMBER]-ai-agent create -f - <<'EOF'
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: agent-service-build-run-bad-
-  namespace: demo-pipieline
+  generateName: agent-service-build-run-
+  namespace: user[YOUR_USER_NUMBER]-ai-agent
 spec:
   taskRunTemplate:
     serviceAccountName: pipeline
   pipelineRef:
     name: agent-service-build
   params:
-    - name: APP_NAME
-      value: "ai-agent"
-    - name: IMAGE_NAME
-      value: "image-registry.openshift-image-registry.svc:5000/ai-agent/ai-agent"
     - name: GIT_REPO
-      value: "https://github.com/${YOUR_GITHUB_USER}/etx-agentic-ai.git"
+      value: "https://github.com/[YOUR_FORK_LOCATION]"
     - name: GIT_REVISION
-      value: "bad"
-    - name: PATH_CONTEXT
-      value: "code"
+      value: "main"
   workspaces:
     - name: workspace
       volumeClaimTemplate:
         spec:
-          accessModes: [ "ReadWriteOnce" ]
+          accessModes:
+            - ReadWriteOnce
           resources:
             requests:
-              storage: 3Gi
+              storage: 1Gi
 EOF
 ----
 
-* Intentionally break the build (e.g., temporarily change `code/Containerfile` to an invalid base) and trigger a build:
+. View the pipelinerun status either in the UI or by command:
 +
 [source,bash,options="wrap",role="execute"]
 ----
-oc -n ai-agent create -f infra/tenants/ai-agent/base/sno/templates/job.yaml
+# List all PipelineRuns to find the generated name
+oc -n user[YOUR_USER_NUMBER]-ai-agent get pipelineruns
+# Watch the PipelineRun status
+oc -n user[YOUR_USER_NUMBER]-ai-agent get pipelineruns -w
 ----
 
-* When the PipelineRun fails, the `finally` step calls the agent. The agent reads logs via MCP OpenShift, searches the web, and creates a GitHub issue.
+== Deploy the agent with ArgoCD
 
-* Verify:
-** Console → `ai-agent` → Workloads → Pods show agent logs with tool calls
-** Your GitHub repo shows a new issue with the summary
+. In your chosen terminal, with your preferred editor, edit the `values.yaml` file found in `etx-agentic-ai-gitops/agent/chart/`
 
-== Artifacts to carry forward
++
+[source,bash,options="wrap",role="execute"]
+----
+vim etx-agentic-ai-gitops/agent/chart/values.yaml
+----
++
 
-* Route URL for `ai-agent` (health verified)
-* Updated tenant pipeline/job YAML pointing to your fork
-* A sample failed PipelineRun name and failing pod name
-* URL of the created GitHub issue
+. Replace the values for [YOUR_USER_NUMBER] and [YOUR_GITHUB_USERNAME] as shown in the example below:
 
-== Troubleshooting
+[source,yaml,options="wrap",role="execute"]
+----
+namespace: user1-ai-agent
+registry: image-registry.openshift-image-registry.svc:5000
+application_name: ai-agent
 
-* If the PipelineRun cannot reach the agent route, verify the Route/Service are ready and DNS resolves in-cluster.
-* If the agent times out on Llama Stack, confirm the server is healthy and reachable from the `ai-agent` namespace.
-* If MCP tools are not registered, revisit module 04 to re-register `mcp::openshift` and `mcp::github` in Llama Stack.
-* If no GitHub issue is created, check the agent logs for the tool call to `create_issue` and ensure the GitHub MCP server is configured.
+# Agent Configuration
+agentConfig:
+  clientTimeout: "600.0"
+  llamaStackUrl: "http://user1-llama-stack-service.user1-llama-stack.svc.cluster.local:8321"
+  maxInferIterations: "50"
+  maxTokens: "5000"
+  modelId: "granite-3-2-8b-instruct"
+  temperature: "0.0"
+  githubOwner: "github_user"
+----
+
+. Set environment variables for the ArgoCD Application (replace with your actual values):
++
+[source,bash,options="wrap",role="execute"]
+----
+export USER_NUMBER="1"  # Replace with your user number
+export GITHUB_REPO="FORK_LOCATION" #Replace with GH location of your forked repo
+export NAMESPACE="user${USER_NUMBER}-ai-agent"
+----
++
+. Create a new argo application from your command line with the following command (you may choose to create the app via the UI as well if you prefer):
++
+[source,bash,options="wrap",role="execute"]
+----
+oc apply -f - <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ai-agent
+  namespace: ${NAMESPACE}
+spec:
+  project: default
+  source:
+    path: agent/chart
+    repoURL: ${GITHUB_REPO}
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ${NAMESPACE}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+EOF
+----
+
+=== Check on application with CLI or ArgoCD UI
+
+[source,bash,options="wrap",role="execute"]
+----
+oc get apps -o wide
+----
+
+. Get route for user-scoped argo instance:
+
+[source,bash,options="wrap",role="execute"]
+----
+oc get routes | grep argo
+----
+
+or in the UI:
+
+image::../assets/images/argo-route.png[]
+
+. Verify health of app and associated agent pod running
+
+== Test your agent's function with a demonstrative pipeline
+
+We will now test the MCP and model integrations, which we've tested already via the playground, in the context of your new agent that we've just deployed.
+
+The pipeline demo pipeline we've prepared builds a java app that fails to deploy successfuly, which triggers an agent call to open a github issue with your forked test repository.
+
+=== Apply the pipeline resource
+
+Using your terminal or the (+) button in the web console, apply the following pipeline resource with your user number substituted into the metadata/namespace placeholder:
 
 
-== What’s Next
+[source,yaml,options="wrap",role="execute"]
+----
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: java-app-build
+  namespace: user${YOUR_USER_NUMBER}-ai-agent
+spec:
+  params:
+  - default: image-registry.openshift-image-registry.svc:5000
+    name: IMAGE_REGISTRY
+    type: string
+  - default: https://github.com/nstrug/openshift-quickstarts.git
+    name: GIT_REPO
+    type: string
+  - default: bad 
+    name: GIT_REVISION
+    type: string
+  - default: undertow-servlet
+    name: SUBDIRECTORY
+    type: string
+  - name: NAMESPACE
+    type: string
+  tasks:
+  - name: fetch-repository
+    retries: 2
+    params:
+    - name: URL
+      value: $(params.GIT_REPO)
+    - name: REVISION
+      value: $(params.GIT_REVISION)
+    - name: SUBDIRECTORY
+      value: ""
+    - name: DELETE_EXISTING
+      value: "true"
+    taskRef:
+      params:
+      - name: kind
+        value: task
+      - name: name
+        value: git-clone
+      - name: namespace
+        value: openshift-pipelines
+      resolver: cluster
+    workspaces:
+    - name: output
+      workspace: shared-workspace
+  - name: build
+    retries: 2
+    params:
+    - name: IMAGE
+      value: $(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.SUBDIRECTORY)
+    - name: TLS_VERIFY
+      value: "false"
+    - name: CONTEXT
+      value: $(params.SUBDIRECTORY)
+    runAfter:
+    - fetch-repository
+    taskRef:
+      params:
+      - name: kind
+        value: task
+      - name: name
+        value: s2i-java
+      - name: namespace
+        value: $(params.NAMESPACE)
+      resolver: cluster
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+  finally:
+  - name: trigger-agent
+    params:
+    - name: aggregateTaskStatus
+      value: "$(tasks.status)"
+    taskSpec:
+      params:
+      - name: aggregateTaskStatus
+      steps: 
+      - name: check-task-status
+        image: registry.redhat.io/openshift4/ose-cli:latest
+        script: |
+          if [ "$(params.aggregateTaskStatus)" == "Failed" ]
+          then
+            set -Bx
+            echo "Looks like your pipeline failed, let's find where you messed up!"
+            failed_pod=$(oc get pods --field-selector="status.phase=Failed" --sort-by="status.startTime" | grep -v "trigger-agent" | grep "java-app-build" | tail -n 1 | awk '{print $1}')
+            curl -i -H "Content-Type: application/json" -X POST -d "{\"namespace\":\"$(params.NAMESPACE)\",\"pod_name\":\"${failed_pod}\",\"container_name\":\"step-s2i-build\"}" http://ai-agent:8000/report-failure
+          fi
+  workspaces:
+  - name: shared-workspace
+----
 
-With the agent running as a service and integrated with the pipeline trigger, you have the foundation for a production rollout. You are now setup for a scenario where you have a new ticket coming in and you need to update your agent and your MTTR is fast due to the automation. Perhaps you are event adventurous enough to add the agent tooling itself as a `finally` call in your agent build pipeline to catch and resolve errors quickly. We will not be doing that today, so that will be left to the reader, but in the next module, we will discuss hardening, observability, and promotion flows.
-== Next Steps
+=== Trigger the pipeline
 
-With your agent now running as a service and integrated with the pipeline trigger, you have established the foundation for a production-ready workflow. This setup enables rapid response to failures, as new issues are automatically created in your GitHub repository, reducing mean time to resolution (MTTR).
+Since the pipeline is configured to fail by default (using `GIT_REVISION: bad`), you can trigger it with minimal parameters. Only `NAMESPACE` is required since it has no default.
 
-In the next module, you will learn how to further harden your deployment, add observability, and implement promotion flows to ensure your agent remains robust and reliable as you move toward production.
+. Set your user number as an environment variable:
++
+[source,bash,options="wrap",role="execute"]
+----
+export YOUR_USER_NUMBER="1"  # Replace 1 with your actual user number
+----
 
-Onward to Module 07!
+. Create the PipelineRun:
++
+[source,bash,options="wrap",role="execute"]
+----
+oc -n user${YOUR_USER_NUMBER}-ai-agent create -f - <<EOF
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: java-app-build-run-
+  namespace: user${YOUR_USER_NUMBER}-ai-agent
+spec:
+  taskRunTemplate:
+    serviceAccountName: pipeline
+  pipelineRef:
+    name: java-app-build
+  params:
+    - name: NAMESPACE
+      value: user${YOUR_USER_NUMBER}-ai-agent
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+EOF
+----
+
+. Monitor the PipelineRun:
++
+[source,bash,options="wrap",role="execute"]
+----
+oc -n user${YOUR_USER_NUMBER}-ai-agent get pipelineruns -w
+----
++
+
+The pipeline will fail on the build step, which will trigger the `finally` step which calls the agent service to analyze the failure and create a GitHub issue.
+
+. Confirm pipelinerun detailed failure:
++
+[source,bash,options="wrap",role="execute"]
+----
+oc get taskrun -l tekton.dev/pipelineRun=java-app-build-run-{UNIQUE_ID}
+----
++
+. Verify in your forked repository that the issue was successfully generated.
