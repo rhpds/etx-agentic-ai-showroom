@@ -87,7 +87,7 @@ As you can see, we've specified the secrets for the services that'll be interact
 
 Also listed is [3] the user configuration used with this distribution (ConfigMap: llama-stack-config). Let's review this configuration before updating the Tavily search key.
 
-== LlamaStack User Config
+== Llama Stack User Config
 
 The user config configmap can be used to store the `run.yaml` configuration for each Llama Stack distribution. Updates to the ConfigMap will restart the Pod to load the new data.
 
@@ -176,16 +176,17 @@ stringData:
 type: Opaque
 ----
 
-. Now update the Llama Stack distribution to reference this new secret instead of the old one. Replace `tavily-search-key` with
+. Via CLI, now update the Llama Stack distribution to reference this new secret instead of the old one. Replace `tavily-search-key` with
 
 +
 [source,bash,options="wrap",role="execute"]
 ----
 new-tavily-search-key
 ----
-+
+
 .Updated Llama Stack Distribution
 image::llamastackdistribution-updated-key.png[Updated Llama Stack config, 600]
+NOTE: This will need to be done over cli with `oc edit` or `oc patch`, whichever is your preference.
 
 . Let's now try out the websearch tool! Navigate back to the Llama Stack Playground UI.
 
