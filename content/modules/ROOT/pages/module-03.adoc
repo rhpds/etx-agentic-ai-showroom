@@ -39,36 +39,11 @@ cd etx-agentic-ai-gitops
 
 . In your chosen terminal environment, create a PipelineRun using the following command:
 
-NOTE: Ensure to replace the values in brackets with the actual values of your user number and forked repository location.
+NOTE: Ensure to replace the values in brackets with the actual values of your user number and forked repository location (you will need to edit the PipelineRun file before execution)
 
 [source,bash,options="wrap",role="execute"]
 ----
-oc -n user[YOUR_USER_NUMBER]-ai-agent create -f - <<'EOF'
-apiVersion: tekton.dev/v1
-kind: PipelineRun
-metadata:
-  generateName: agent-service-build-run-
-  namespace: user[YOUR_USER_NUMBER]-ai-agent
-spec:
-  taskRunTemplate:
-    serviceAccountName: pipeline
-  pipelineRef:
-    name: agent-service-build
-  params:
-    - name: GIT_REPO
-      value: "https://github.com/[YOUR_FORK_LOCATION]"
-    - name: GIT_REVISION
-      value: "main"
-  workspaces:
-    - name: workspace
-      volumeClaimTemplate:
-        spec:
-          accessModes:
-            - ReadWriteOnce
-          resources:
-            requests:
-              storage: 1Gi
-EOF
+oc -n user[YOUR_USER_NUMBER]-ai-agent create -f etx-agentic-ai-gitops/lab-resources/agent-service-build-run
 ----
 
 . View the pipelinerun status either in the UI or by command:
@@ -120,30 +95,11 @@ export GITHUB_REPO="FORK_LOCATION" #Replace with GH location of your forked repo
 export NAMESPACE="user${USER_NUMBER}-ai-agent"
 ----
 +
-. Create a new argo application from your command line with the following command (you may choose to create the app via the UI as well if you prefer):
+. Create a new argo application from your command line with the following command (you may choose to create the app via the UI as well if you prefer).
 +
 [source,bash,options="wrap",role="execute"]
 ----
-oc apply -f - <<EOF
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: ai-agent
-  namespace: ${NAMESPACE}
-spec:
-  project: default
-  source:
-    path: agent/chart
-    repoURL: ${GITHUB_REPO}
-    targetRevision: HEAD
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: ${NAMESPACE}
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-EOF
+oc apply -f etx-agentic-ai-gitops/lab-resources/ai-agent-app
 ----
 
 === Check on application with CLI or ArgoCD UI
@@ -182,99 +138,11 @@ This demo application pipeline models a common CI/CD flow and adds an automated 
 
 === Apply the pipeline resource
 
-Using your terminal or the (+) button in the web console, apply the following pipeline resource with your user number substituted into the metadata/namespace placeholder:
+Using your terminal or the (+) button in the web console, apply the following pipeline resource with your user number substituted into the metadata/namespace placeholder (you will need to edit the file directly):
 
 [source,yaml,options="wrap",role="execute"]
 ----
-apiVersion: tekton.dev/v1
-kind: Pipeline
-metadata:
-  name: java-app-build
-  namespace: user${YOUR_USER_NUMBER}-ai-agent
-spec:
-  params:
-  - default: image-registry.openshift-image-registry.svc:5000
-    name: IMAGE_REGISTRY
-    type: string
-  - default: https://github.com/nstrug/openshift-quickstarts.git
-    name: GIT_REPO
-    type: string
-  - default: bad 
-    name: GIT_REVISION
-    type: string
-  - default: undertow-servlet
-    name: SUBDIRECTORY
-    type: string
-  - name: NAMESPACE
-    type: string
-  tasks:
-  - name: fetch-repository
-    retries: 2
-    params:
-    - name: URL
-      value: $(params.GIT_REPO)
-    - name: REVISION
-      value: $(params.GIT_REVISION)
-    - name: SUBDIRECTORY
-      value: ""
-    - name: DELETE_EXISTING
-      value: "true"
-    taskRef:
-      params:
-      - name: kind
-        value: task
-      - name: name
-        value: git-clone
-      - name: namespace
-        value: openshift-pipelines
-      resolver: cluster
-    workspaces:
-    - name: output
-      workspace: shared-workspace
-  - name: build
-    retries: 2
-    params:
-    - name: IMAGE
-      value: $(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.SUBDIRECTORY)
-    - name: TLS_VERIFY
-      value: "false"
-    - name: CONTEXT
-      value: $(params.SUBDIRECTORY)
-    runAfter:
-    - fetch-repository
-    taskRef:
-      params:
-      - name: kind
-        value: task
-      - name: name
-        value: s2i-java
-      - name: namespace
-        value: $(params.NAMESPACE)
-      resolver: cluster
-    workspaces:
-    - name: source
-      workspace: shared-workspace
-  finally:
-  - name: trigger-agent
-    params:
-    - name: aggregateTaskStatus
-      value: "$(tasks.status)"
-    taskSpec:
-      params:
-      - name: aggregateTaskStatus
-      steps: 
-      - name: check-task-status
-        image: registry.redhat.io/openshift4/ose-cli:latest
-        script: |
-          if [ "$(params.aggregateTaskStatus)" == "Failed" ]
-          then
-            set -Bx
-            echo "Looks like your pipeline failed, let's find where you messed up!"
-            failed_pod=$(oc get pods --field-selector="status.phase=Failed" --sort-by="status.startTime" | grep -v "trigger-agent" | grep "java-app-build" | tail -n 1 | awk '{print $1}')
-            curl -i -H "Content-Type: application/json" -X POST -d "{\"namespace\":\"$(params.NAMESPACE)\",\"pod_name\":\"${failed_pod}\",\"container_name\":\"step-s2i-build\"}" http://ai-agent:8000/report-failure
-          fi
-  workspaces:
-  - name: shared-workspace
+oc apply -f etx-agentic-ai-gitops/lab-resources/demo-pipeline
 ----
 
 === Trigger the pipeline
@@ -288,34 +156,11 @@ Since the pipeline is configured to fail by default (using `GIT_REVISION: bad`),
 export YOUR_USER_NUMBER="1"  # Replace 1 with your actual user number
 ----
 
-. Create the PipelineRun:
+. Create the PipelineRun (edit the command and file with your user number):
 +
 [source,bash,options="wrap",role="execute"]
 ----
-oc -n user${YOUR_USER_NUMBER}-ai-agent create -f - <<EOF
-apiVersion: tekton.dev/v1
-kind: PipelineRun
-metadata:
-  generateName: java-app-build-run-
-  namespace: user${YOUR_USER_NUMBER}-ai-agent
-spec:
-  taskRunTemplate:
-    serviceAccountName: pipeline
-  pipelineRef:
-    name: java-app-build
-  params:
-    - name: NAMESPACE
-      value: user${YOUR_USER_NUMBER}-ai-agent
-  workspaces:
-    - name: shared-workspace
-      volumeClaimTemplate:
-        spec:
-          accessModes:
-            - ReadWriteOnce
-          resources:
-            requests:
-              storage: 1Gi
-EOF
+oc -n user${YOUR_USER_NUMBER}-ai-agent create -f etx-agentic-ai-gitops/lab-resources/demo-pipeline-run
 ----
 
 . Monitor the PipelineRun:
