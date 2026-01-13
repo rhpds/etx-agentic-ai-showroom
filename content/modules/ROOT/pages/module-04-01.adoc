@@ -1,268 +1,70 @@
 :imagesdir: ../assets/images
-= Evaluation and Observability
+= Adding Guardrails
 
-include::vars.adoc[]
+In the context of AI, "Guardrails" come in many forms. Guardrails are safety mechanisms that ensure your AI agents behave responsibly, securely, and within acceptable boundaries. They act as protective barriers against unintended behaviors, security vulnerabilities, and misuse.
 
-[NOTE]
-====
-Persona: AI Engineer (primary). Also relevant: SRE/Platform Engineer.
-====
+Some common examples include:
 
-[IMPORTANT]
-.In this module
-====
-Learn a practical, high-level flow to combine agent evaluation with observability so you can measure, understand, and improve behavior over time.
-====
+== Input Guardrails
 
-[NOTE]
-====
-Estimated time: 15-20 minutes
-====
+* **Prompt Injection Prevention**: Detect and block attempts to manipulate the agent through malicious prompts that try to override system instructions or extract sensitive information
+* **Content Filtering**: Screen user inputs for inappropriate content, profanity, hate speech, or personally identifiable information (PII) before processing
+* **Input Validation**: Ensure user queries conform to expected formats and don't contain malicious payloads (SQL injection, command injection, etc.)
+* **Rate Limiting**: Prevent abuse by limiting the number of requests per user or session within a time window
 
-== What you'll do...stretch goals!
+== Output Guardrails
 
-* Plan evaluation scenarios and acceptance criteria
-* Run evaluations and capture outputs, tool calls, and reasoning traces
-* Instrument the service to emit logs/metrics/traces that align to evaluation steps
-* Add guardrails/safety toggles and observe impact in both eval results and signals
-* Establish dashboards/alerts to continuously monitor the same signals
+* **Content Moderation**: Filter agent responses to prevent generating harmful, biased, or inappropriate content
+* **PII Redaction**: Automatically detect and remove sensitive information (social security numbers, credit cards, passwords) from responses
+* **Hallucination Detection**: Identify when the model generates false or ungrounded information, especially for factual queries
+* **Toxicity Filtering**: Prevent the agent from generating offensive, discriminatory, or harmful language
 
-== Flow overview
+== Behavioral Guardrails
 
-1. Define what “good” looks like for your agent (correctness, stability, latency, tool success)
-2. Evaluate with representative prompts/tasks; record outputs and intermediate steps
-3. Observe service-level signals (logs, metrics, traces) during the same runs
-4. Compare results against criteria; identify where behavior or performance falls short
-5. Tweak prompts, tools, or guardrails; re-run to verify improvements
-6. Keep dashboards and alerts keyed to the same signals used in evaluation
+* **Tool Usage Restrictions**: Limit which tools the agent can invoke and under what conditions (e.g., prevent destructive operations without confirmation)
+* **Action Approval Workflows**: Require human-in-the-loop approval for high-risk actions like deleting resources, modifying production systems, or accessing sensitive data
+* **Scope Boundaries**: Restrict the agent to operate only within designated namespaces, repositories, or resource boundaries
+* **Cost Controls**: Monitor and limit token usage, API calls, or computational resources to prevent runaway costs
 
-== Success criteria
+== Compliance and Safety Guardrails
 
-* The agent produces consistent answers across N repeated runs for a fixed prompt (tolerance defined by your team)
-* Tool-call failures/timeouts trend downward after guardrail/safety changes
-* Latency and error rates meet targets; traces show fewer retries and faster resolutions
-* Approximate MTTR improvement: measure time from failure detection to GitHub issue creation before and after the finally step
+* **Regulatory Compliance**: Ensure responses comply with regulations like GDPR, HIPAA, or industry-specific standards
+* **Brand Safety**: Prevent the agent from making commitments, promises, or statements that could create legal or reputational risks
+* **Audit Logging**: Record all agent interactions, decisions, and tool invocations for compliance and incident investigation
+* **Jailbreak Detection**: Identify and block sophisticated attempts to circumvent safety measures through multi-turn conversations or encoded instructions
 
-Open up the following notebook in your workspace.
+== Implementing Guardrails in Llama Stack
 
+When you are handling many different Guardrails, you need to consider orchestration. This is where the https://trustyai.org/docs/main/gorch-tutorial[Trusty AI Guardrails Orchestrator] comes into play.
 
-// lightbox - for images - FIXME need to make the include::partial$lightbox.hbs WORK
-++++
-<div id="myModal" class="modal">
-    <span class="close cursor" onclick="closeModal()">&times;</span>
-    <div class="modal-content" onclick="closeModal()">
-        <!--suppress HtmlRequiredAltAttribute as this will be set when selecting the image via JavaScript,
-        RequiredAttributes as src will be set by when selecting the image via JavaScript -->
-        <img id="imageinmodal">
-    </div>
-</div>
-<script>
-    function openModal() {
-        document.getElementById("myModal").style.display = "block";
-        // use overflowY = hidden to prevent the body from scrolling when modal is visible
-        // doesn't work with overscroll-behavior, as this would work only when the modal has a scrollbar
-        document.getElementsByTagName("body")[0].style.overflowY = "hidden";
-    }
+Today, we will only implement one type of Guardrail: the https://ai.meta.com/research/publications/llama-guard-llm-based-input-output-safeguard-for-human-ai-conversations/[Llama Guard] model. This model is specifically targeted to prevent harmful content.
 
-    function closeModal() {
-        document.getElementById("myModal").style.display = "none";
-        document.getElementsByTagName("body")[0].style.overflowY = "auto";
-    }
+Llama Stack provides built-in support for safety guardrails through its safety API. These can be configured at different layers of your agent system to provide defense-in-depth protection.
 
-    document.querySelectorAll('.imageblock img').forEach(element => {
-        if (element.closest('a') === null) {
-            element.className += " lightbox";
-            element.addEventListener('click', evt => {
-                document.getElementById("imageinmodal").setAttribute("src", evt.currentTarget.getAttribute("src"))
-                document.getElementById("imageinmodal").setAttribute("alt", evt.currentTarget.getAttribute("alt"))
-                openModal();
-            })
-        }
-    });
-</script>
-<style>
-    /* The Modal (background) */
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 10;
-        padding-top: 5vh;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        backdrop-filter: blur(3px);
-        background-color: rgba(30, 30, 30, 0.8);
-    }
-    img.lightbox {
-        cursor: pointer;
-    }
-    /* Modal Content */
-    .modal-content {
-        position: relative;
-        margin: auto;
-        padding: 0;
-        width: 90%;
-        max-height: 90vh;
-        cursor: pointer;
-    }
+Edit the ConfigMap:
 
-    .modal-content img {
-        width: auto;
-        height: auto;
-        max-width: 90vw;
-        max-height: 90vh;
-        min-width: 90vw;
-        min-height: 90vh;
-        display: block;
-        margin-right: auto;
-        margin-left: auto;
-        object-fit: contain;
-    }
+// Information to add to Guardrail just waiting on what I need to default include in gitops.
 
-    /* The Close Button */
-    .close {
-        color: white;
-        position: absolute;
-        top: 10px;
-        right: 25px;
-        font-size: 35px;
-        font-weight: bold;
-    }
+=== Test Guardrail functionality in the Llama Stack playground. 
 
-    .close:hover,
-    .close:focus {
-        color: #999;
-        text-decoration: none;
-        cursor: pointer;
-    }
-</style>
-++++
+. Go back to the playground interface
 
-== Production Hardening and Promotion (Optional)
+. Select `Agent-based`
 
-[NOTE]
-====
-Persona: SRE/Platform Engineer (primary). Also relevant: AI Engineer.
-====
+. Add the Llama Guard model to the Input and Output sheild form sections:
 
-[NOTE]
-====
-Estimated time: 45–60 minutes (Optional)
-====
+// add picture when working
 
-== Before you begin
+. Test functionality by typing something or asking something harmful in the chat interface.
 
-Make sure the following are completed from earlier modules:
+== Summary
 
-* Cluster is bootstrapped and healthy (OpenShift GitOps and Agentic Argo CD reachable)
-* Vault is initialized, unsealed, and you exported `ROOT_TOKEN` and `UNSEAL_KEY`
-* Secrets have been hydrated into Vault (Agentic Argo CD showing healthy secret integration)
-* Your fork is configured with PAT and webhook to Argo CD
-* Tools installed: `oc`, `vault`, `jq`, `envsubst`, `python3`
-* Optional: If using MaaS, export the `MODEL_*` environment variables
+Implementing guardrails is essential for production AI deployments. They provide defense-in-depth protection, ensuring your agents:
 
-== What you'll do...stretch goals!
+* Cannot be manipulated through malicious prompts
+* Do not generate harmful, inappropriate, or legally risky content
+* Operate only within authorized boundaries
+* Comply with regulatory and organizational policies
+* Maintain audit trails for accountability
 
-* Add observability (logs/metrics/traces), readiness/liveness/startup probes
-* Apply configuration policies and security posture (image signing, NetworkPolicies, Secrets)
-* Define promotion flows (dev→stage→prod), environment parity checks, and rollback strategy
-* Introduce safer rollouts (blue/green or canary), capacity planning, and autoscaling
-
-== Deploy the hardening and promotion assets
-
-
-// lightbox - for images - FIXME need to make the include::partial$lightbox.hbs WORK
-++++
-<div id="myModal" class="modal">
-    <span class="close cursor" onclick="closeModal()">&times;</span>
-    <div class="modal-content" onclick="closeModal()">
-        <!--suppress HtmlRequiredAltAttribute as this will be set when selecting the image via JavaScript,
-        RequiredAttributes as src will be set by when selecting the image via JavaScript -->
-        <img id="imageinmodal">
-    </div>
-</div>
-<script>
-    function openModal() {
-        document.getElementById("myModal").style.display = "block";
-        // use overflowY = hidden to prevent the body from scrolling when modal is visible
-        // doesn't work with overscroll-behavior, as this would work only when the modal has a scrollbar
-        document.getElementsByTagName("body")[0].style.overflowY = "hidden";
-    }
-
-    function closeModal() {
-        document.getElementById("myModal").style.display = "none";
-        document.getElementsByTagName("body")[0].style.overflowY = "auto";
-    }
-
-    document.querySelectorAll('.imageblock img').forEach(element => {
-        if (element.closest('a') === null) {
-            element.className += " lightbox";
-            element.addEventListener('click', evt => {
-                document.getElementById("imageinmodal").setAttribute("src", evt.currentTarget.getAttribute("src"))
-                document.getElementById("imageinmodal").setAttribute("alt", evt.currentTarget.getAttribute("alt"))
-                openModal();
-            })
-        }
-    });
-</script>
-<style>
-    /* The Modal (background) */
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 10;
-        padding-top: 5vh;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        backdrop-filter: blur(3px);
-        background-color: rgba(30, 30, 30, 0.8);
-    }
-    img.lightbox {
-        cursor: pointer;
-    }
-    /* Modal Content */
-    .modal-content {
-        position: relative;
-        margin: auto;
-        padding: 0;
-        width: 90%;
-        max-height: 90vh;
-        cursor: pointer;
-    }
-
-    .modal-content img {
-        width: auto;
-        height: auto;
-        max-width: 90vw;
-        max-height: 90vh;
-        min-width: 90vw;
-        min-height: 90vh;
-        display: block;
-        margin-right: auto;
-        margin-left: auto;
-        object-fit: contain;
-    }
-
-    /* The Close Button */
-    .close {
-        color: white;
-        position: absolute;
-        top: 10px;
-        right: 25px;
-        font-size: 35px;
-        font-weight: bold;
-    }
-
-    .close:hover,
-    .close:focus {
-        color: #999;
-        text-decoration: none;
-        cursor: pointer;
-    }
-</style>
-++++
+With guardrails in place, you can confidently deploy AI agents knowing they have protective barriers against common security and safety risks.
