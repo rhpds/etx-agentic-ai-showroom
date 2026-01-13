@@ -1,5 +1,5 @@
 :imagesdir: ../assets/images
-= ETX AI Super Lab 2 (Agentic AI)
+= Agentic AI Super Lab
 
 == Lab Overview
 
