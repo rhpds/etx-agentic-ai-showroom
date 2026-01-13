@@ -1,20 +1,17 @@
 :imagesdir: ../assets/images
 = From Playground to Prototype - Building Your Agent in Red Hat AI
 
+include::vars.adoc[]
+
 [IMPORTANT]
 .In this lab
 ====
 You will build an agent, and manage it through ArgoCD. You will then create a pipeline to trigger the agent to create a GitHub issue in your forked repository from previous modules.
 ====
 
-// .Security reminders
-// * Keep PAT scopes minimal; store tokens securely
-// * Do not commit secrets or tokens to notebooks or repo; use pre-commit hooks to check for secrets
-// * Prefer Vault-managed secrets where possible
-
 == Git clone repository locally
 
-In your own environment, or in a workbench image terminal if preferred:
+In your own environment, or in your showroom terminal if preferred:
 
 . Authenticate to the cluster with your user credentials.
 . Clone your previously created repository fork:
@@ -28,9 +25,17 @@ cd etx-agentic-ai-gitops
 +
 . Authenticate to github, if not already, using a personal access token (separate from the one previously created in the workshop) with at least `Read and Write` permission to `Contents` of the above repository.
 
-== Load the Agent file
+== Load the Agent files
 
-. In your local preferred environment, or within the workbench image IDE, open `agent/code/agent.py`.
+. In your local preferred environment, or within the workbench image IDE, open `agent/code/agent.py` and view the contents of the agent application. This file contains the core logic. Ensure you understand how it works. Then view the `agent/code/main.py` file to understand how the agent is triggered.
+
+Overall, the system works as a GitOps remediation / failure triage agent:
+
+* FastAPI server receives failure notifications
+* Agent analyzes OpenShift pod logs using MCP tools
+* Searches for solutions via web search
+* Creates GitHub issues with error summaries and solutions
+
 // changes to file including your github user id, username
 
 . Git commit and push changes to your fork.
@@ -39,21 +44,21 @@ cd etx-agentic-ai-gitops
 
 . In your chosen terminal environment, create a PipelineRun using the following command:
 
-NOTE: Ensure to replace the values in brackets with the actual values of your user number and forked repository location (you will need to edit the PipelineRun file before execution)
+NOTE: Edit the file in the below command with the appropriate variables. Then, ensure the forked repository location is accurate in the command.
 
-[source,bash,options="wrap",role="execute"]
+[source,bash,options="wrap",role="execute",subs="attributes+"]
 ----
-oc -n user[YOUR_USER_NUMBER]-ai-agent create -f etx-agentic-ai-gitops/lab-resources/agent-service-build-run
+oc -n {etx_agentic_ai_username}-ai-agent create -f etx-agentic-ai-gitops/lab-resources/agent-service-build-run
 ----
 
 . View the pipelinerun status either in the UI or by command:
 +
-[source,bash,options="wrap",role="execute"]
+[source,bash,options="wrap",role="execute",subs="attributes+"]
 ----
 # List all PipelineRuns to find the generated name
-oc -n user[YOUR_USER_NUMBER]-ai-agent get pipelineruns
+oc -n {etx_agentic_ai_username}-ai-agent get pipelineruns
 # Watch the PipelineRun status
-oc -n user[YOUR_USER_NUMBER]-ai-agent get pipelineruns -w
+oc -n {etx_agentic_ai_username}-ai-agent get pipelineruns -w
 ----
 
 == Deploy the agent with ArgoCD
@@ -83,18 +88,11 @@ agentConfig:
   maxTokens: "5000"
   modelId: "granite-3-2-8b-instruct"
   temperature: "0.0"
-  githubOwner: "github_user"
+  githubOwner: "github_username"
 ----
 
-. Set environment variables for the ArgoCD Application (replace with your actual values):
-+
-[source,bash,options="wrap",role="execute"]
-----
-export USER_NUMBER="1"  # Replace with your user number
-export GITHUB_REPO="FORK_LOCATION" #Replace with GH location of your forked repo
-export NAMESPACE="user${USER_NUMBER}-ai-agent"
-----
-+
+. Edit the variables within the `etx-agentic-ai-gitops/lab-resources/ai-agent-app file. For namespace set `{etx_agentic_ai_username}-ai-agent` and for GitHub repository set your forked repo location.
+
 . Create a new argo application from your command line with the following command (you may choose to create the app via the UI as well if you prefer).
 +
 [source,bash,options="wrap",role="execute"]
@@ -149,23 +147,16 @@ oc apply -f etx-agentic-ai-gitops/lab-resources/demo-pipeline
 
 Since the pipeline is configured to fail by default (using `GIT_REVISION: bad`), you can trigger it with minimal parameters. Only `NAMESPACE` is required since it has no default.
 
-. Set your user number as an environment variable:
+. Create the PipelineRun:
 +
 [source,bash,options="wrap",role="execute"]
 ----
-export YOUR_USER_NUMBER="1"  # Replace 1 with your actual user number
-----
-
-. Create the PipelineRun (edit the command and file with your user number):
-+
-[source,bash,options="wrap",role="execute"]
-----
-oc -n user${YOUR_USER_NUMBER}-ai-agent create -f etx-agentic-ai-gitops/lab-resources/demo-pipeline-run
+oc -n {etx_agentic_ai_username}-ai-agent create -f etx-agentic-ai-gitops/lab-resources/demo-pipeline-run
 ----
 
 . Monitor the PipelineRun:
 +
-[source,bash,options="wrap",role="execute"]
+[source,bash,options="wrap",role="execute",subs="attributes+"]
 ----
 oc -n user${YOUR_USER_NUMBER}-ai-agent get pipelineruns -w
 ----
