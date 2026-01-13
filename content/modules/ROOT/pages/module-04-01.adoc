@@ -41,21 +41,97 @@ Today, we will only implement one type of Guardrail: the https://ai.meta.com/res
 
 Llama Stack provides built-in support for safety guardrails through its safety API. These can be configured at different layers of your agent system to provide defense-in-depth protection.
 
-Edit the ConfigMap:
+. Edit the ConfigMap
 
-// Information to add to Guardrail just waiting on what I need to default include in gitops.
+The model is already set up within the deployment, we just need to add in the safety and shields sections.
+
+Add the following code block in the run.yaml section of the ConfigMap, in the `providers` section:
+
+[source,yaml,options="wrap",role="execute"]
+----
+safety:
+- provider_id: llama-guard
+  provider_type: inline::llama-guard
+  config:
+    excluded_categories: []
+    model: vllm-safety/Llama-Guard-3-1B
+----
+
+Then, below the providers section, add in the shields:
+
+[source,yaml,options="wrap",role="execute"]
+----
+shields:
+ - shield_id: vllm-safety/Llama-Guard-3-1B
+   model_id: vllm-safety/Llama-Guard-3-1B
+----
+
+The section you've just added should match the following:
+
+image::safety-sheilds-config.png[]
+
+As the last step, we need to register the shields in our showroom terminal (you may also use your own local terminal if you've installed the llama-stack-client there and are authenticated appropriately):
+
+[source,yaml,options="wrap",role="execute"]
+----
+llama-stack-client shields register --shield-id vllm-safety/Llama-Guard-3-1B
+----
+
+Now list the available shields to confirm it was registered appropriately:
+
+[source,yaml,options="wrap",role="execute"]
+----
+llama-stack-client shields list
+----
+
+image::lsc-register-shields.png[]
 
 === Test Guardrail functionality in the Llama Stack playground. 
 
-. Go back to the playground interface
+1. Go back to the playground interface
 
-. Select `Agent-based`
+2. Select `Agent-based`
 
-. Add the Llama Guard model to the Input and Output sheild form sections:
+3. Add the Llama Guard model to the Input and Output sheild form sections:
++
+image::input-shield.png[]
++
+image::input-output-sheilds.png[]
++
+**Input Shields**
 
-// add picture when working
+Input shields protect your AI system by screening incoming user requests before they reach the model. They act as gatekeepers that detect and block:
 
-. Test functionality by typing something or asking something harmful in the chat interface.
+* Malicious prompts trying to manipulate the agent
+* Inappropriate or harmful content in user queries
+* Attempts to extract sensitive information or override system instructions
+
+**Output Shields**
+
+Output shields protect users (and your organization) by filtering the model's responses before they're delivered. They prevent the AI from:
+
+* Generating harmful, toxic, or biased content
+* Leaking sensitive information (PII, credentials, etc.)
+* Making inappropriate commitments or statements
+
+**Why Use Both?**
+
+Defense-in-depth. Input shields alone can't catch everything because:
+
+* The model might still generate harmful content from seemingly innocent prompts
+* Training data could contain biases that lead to problematic outputs
+* Complex multi-turn conversations might bypass input filtering
+
+Output shields alone are insufficient because:
+
+* Malicious inputs could compromise the model's internal state
+* You want to block attacks early rather than waste compute resources
+* Some prompt injections could expose system prompts or configurations
+
+Together, input and output shields create a safety envelope around your AI agent, ensuring both requests and responses meet your security and safety standards.
+
++
+4. Test functionality by typing something or asking something harmful in the chat interface. Observe the model's behavior. Try a few different things and s
 
 == Summary
 
