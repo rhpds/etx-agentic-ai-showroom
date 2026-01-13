@@ -1,9 +1,69 @@
 :imagesdir: ../assets/images
-= LlamaStack Observability
+= Agentic System Observability
 
-LlamaStack integrates with the Observability stack we deployed as part of the bootstrap. The observability stack has a lot of moving parts. Traces are sent from LlamaStack via OTEL to a Tempo sink endpoint. We can then view traces in OpenShift using the Observe > Traces dashboard.
+include::vars.adoc[]
 
-. Edit the LlamaStack ConfigMap to add telemetry stanza with the service name, sinks and the OTEL Tracing endpoint which is set as an environment variable on the Deployment
+[IMPORTANT]
+.In this module
+====
+Learn a practical, high-level flow to combine agent evaluation with observability so you can measure, understand, and improve behavior over time.
+====
+
+In the context of production Generative AI systems, observability is your ability to understand what’s happening inside your AI applications by examining the data it produces. 
+
+Without the necessary observability tooling, you only know something is wrong when it breaks or someone complains. With proper observability, you can spot problems before they impact your users and you're able to fix issues quickly.
+
+Easy, right?
+
+== Red Hat AI Observability Stack
+
+Red Hat AI provides https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/3.0/html/managing_openshift_ai/managing-observability_managing-rhoai[centralized platform observability]: an integrated, out-of-the-box solution for monitoring the health and performance of your Red Hat AI instance and user workloads.
+
+This centralized solution includes a dedicated, pre-configured observability stack, featuring the **OpenTelemetry Collector (OTC)** for standardized data ingestion, **Prometheus** for metrics, and the **Red Hat build of Tempo** for distributed tracing. This architecture enables a common set of health metrics and alerts for OpenShift AI components and offers mechanisms to integrate with your existing external observability tools.
+
+image::observability-stack.png[]
+
+== OpenTelemetry: The Open-Source Standard for Observability
+
+Red Hat OpenShift AI uses OpenTelemetry (OTel), the open-source standard for distributed tracing and metrics collection. OpenTelemetry provides:
+
+* Automatic instrumentation for common frameworks (Flask, FastAPI, Express, etc.)
+* Manual instrumentation for custom operations specific to your application
+* Vendor-neutral format that works with any tracing backend
+* Integration with metrics and logs for complete observability
+
+== OpenTelemetry and Llama Stack
+
+Llama Stack has built-in OpenTelemetry support through its meta-reference telemetry provider, which automatically instruments inference operations to generate observability data including traces and metrics.
+
+=== How Llama Stack Telemetry Works:
+
+When telemetry is enabled, Llama Stack automatically creates spans for each inference request and emits token usage metrics. Each request generates:
+
+* Traces: Distributed traces showing the inference request flow with timing data
+* Metrics: Token counters (llama_stack_prompt_tokens_total, llama_stack_completion_tokens_total, llama_stack_tokens_total) labeled by model_id and provider_id
+
+The telemetry configuration in Llama Stack includes the following variables:
+
+[source,sh,options="wrap"]
+----
+- name: TELEMETRY_SINKS
+  value: 'console, sqlite, otel_trace, otel_metric'
+- name: OTEL_EXPORTER_OTLP_ENDPOINT
+  value: 'http://otel-collector-collector.observability-hub.svc.cluster.local:4318'
+- name: OTEL_SERVICE_NAME
+  alue: user2-llamastack
+----
+
+These environment variables configure Llama Stack to:
+
+* Export telemetry data to the RHOAI OpenTelemetry Collector via OTLP (port 4318)
+* Enable both trace and metric sinks for comprehensive observability
+* Tag all telemetry with the service name for filtering in Tempo and Prometheus
+
+== Add observability to the Llama Stack ConfigMap
+
+. Edit the Llama Stack ConfigMap to add telemetry stanza with the service name, sinks and the OTEL Tracing endpoint which is set as an environment variable on the Deployment:
 +
 [source,yaml,options="wrap"]
 ----
@@ -22,9 +82,55 @@ providers:
       otel_exporter_otlp_endpoint: ${env.OTEL_EXPORTER_OTLP_ENDPOINT:=}
       sqlite_db_path: /opt/app-root/src/.llama/distributions/rh/trace_store.db
 ----
++
+We will focus on distributed tracing for our Llama Stack telemetry configuration. We are not hosting the model ourselves, so we will not visualize those metrics, however that could be a natural extension of our workshop if you run through these steps with your own model deployment.
 
-. Refresh the playground in the browser. Select the Tools playground and select websearch, the MCP github Server and MCP OpenShift tool, ReAct agent and Llama4 model. Try out some of the previous prompting that include Tool calls to generate some traces.
-+
-image::llama-stack-traces1.png[LlamaStack Traces, 800]
-+
-image::llama-stack-traces2.png[LlamaStack Traces, 800]
+. Navigate to `Observe`-> `Traces` in the OpenShift web console navigation bar:
+
+image::navigate-to-traces.png[]
+
+. In the Tempo UI plugin, select the tempo instance from the drop-down:
+
+image::tempo-instance-select.png[]
+
+== Understanding Distributed Tracing
+
+How do you know where time is spent? Which service is the bottleneck? Where errors actually originate? Distributed tracing answers these questions by connecting the dots across your entire system, showing you the complete journey of each request.
+
+Imagine following a student through their day on campus - from the library to the lab to office hours. You’d see where they spend the most time, where they get stuck, and what path they take. Distributed tracing does this for requests traveling across our Llama Stack framework between the different endpoints.
+
+Each service instruments its code to emit spans - records of work done. These spans include:
+
+* Operation name: What work was performed (e.g., “RAG query”, “LLM inference”)
+* Duration: How long it took (critical for finding bottlenecks)
+* Parent span: What triggered this operation (builds the request tree)
+* Attributes: Metadata like user ID, query text, documents retrieved, tokens generated
+
+When spans are connected by parent-child relationships, they form a trace - the complete story of our agent's actions, or simply our engagement with the Llama Stack playground.
+
+image::tracing-spans.png[]
+
+In this trace visualization, you can see the waterfall view showing:
+
+* Total request time and each service’s contribution
+* Which operations run sequentially vs. in parallel
+* Where the most time is spent (the longest bars)
+* Parent-child relationships (the tree structure)
+
+== Generate new trace data
+
+. Refresh the playground in the browser. Select Agent-based, and one or multiple available tools. 
+
+. Complete a couple of agentic chat interactions.
+
+. Navigate back to the traces dashboard. Increase the traces limit (begin with 500). You may also adjust the time range:
+
+image::traces-limit.png[]
+
+// View a trace, what does it mean?
+// Run a query
+
+
+
+
+
