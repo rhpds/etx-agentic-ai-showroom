@@ -24,6 +24,8 @@ This means the details of the provided tools (which tools, for which purpose, ho
 
 Let's now dive into how to add MCP-based tool providers to Llama Stack.
 
+NOTE: The process of registering MCP servers in 3.x is different than the steps you will take in this module. Instead of editing the `llama-stack-config` itself, there is a separate ConfigMap resource for your MCP servers you must apply to register them properly with the Llama Stack, AI Assets and Gen AI playground features of the new platform.
+
 == Adding the OpenShift MCP Server to Llama Stack
 
 For this lab, we've already deployed the pod that runs the https://github.com/containers/kubernetes-mcp-server[**OpenShift MCP server**,window=_blank] that interacts with our OpenShift cluster. Let's add it to Llama Stack as a new tool provider.
@@ -77,12 +79,12 @@ apis:
 models:
   - metadata: {}
     model_id: granite-3-2-8b-instruct
-    provider_id: vllm-granite-3-2-8b-instruct
+    provider_id: vllm
     provider_model_id: granite-3-2-8b-instruct
     model_type: llm
 providers:
   inference:
-  - provider_id: vllm-granite-3-2-8b-instruct
+  - provider_id: vllm
     provider_type: "remote::vllm"
     config:
       url: https://litellm-prod.apps.maas.redhatworkshops.io/v1
@@ -131,28 +133,28 @@ tool_groups:
 image::llamastack-playground-restart.png[Llama Stack Playground restart, 800]
 //TODO: update screenshot with lab user
 
-. Refresh the playground in the browser. Enter the **Tools** playground, select the **openshift** MCP Server entry and expand `Tools from`.
+. Refresh the playground in the browser. Select **Agent-based**, and then select the **openshift** MCP Server entry underneath the available tool groups. 
 
 +
 image::llamastack-playground-mcp-openshift.png[Llama Stack MCP OpenShift tool, 800]
 
-. Review the list of tools that can be invoked via the OpenShift tools provider.
+. Expand `Tools from` to review the list of tools available from the MCP server.
 
 +
 image::llamastack-playground-mcp-openshift-tools.png[Llama Stack MCP OpenShift tool list, 800]
 
-. Select **Regular agent** and try the prompt:
+. Try the prompt:
 +
 [source,bash,options="wrap",role="execute"]
 ----
 List the pods in the mcp-openshift namespace.
 ----
 
-. Experiment with different agents and prompts.
+. Experiment with different prompts to activate the various tools available with the MCP server.
 
 [TIP]
 ====
-Not all the agent types and prompts work all of the time. This is a common problem with tool calling and LLMs. In general, larger and more capable models perform more reliably and predictably with tools.
+Not all the prompts work all of the time. This is a common problem with tool calling and LLMs. In general, larger and more capable models often perform more reliably and predictably with tools. Granite performs decently well but is imperfect.
 ====
 
 
@@ -217,76 +219,26 @@ Save the token for easy access as you'll need to use it later in the lab.
 
 . **Deploy GitHub MCP Server**
 
-.. In the OpenShift Console, select project `{etx_agentic_ai_username}-llama-stack`, then select `Quick create` -> `Import YAML`
+.. Git clone your forked repository either in the browser terminal or in your local terminal. If you use the terminal in the showroom browser, you will need to authenticate to your GitHub account.
 
+.. Authenticate to your cluster if working in your local terminal for the first time.
 +
-image::ocp-import-yaml.png[OpenShift import YAML, 400]
-+
-.. Copy and paste the following content:
-
-+
-[source,yaml,options="wrap",role="execute"]
+[source,bash,options="wrap",role="execute",subs="attributes+"]
 ----
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: github-credentials-v1
-stringData:
-  # Add your PAT here
-  token: <YOUR_GITHUB_PERSONAL_ACCESS_TOKEN>
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: github-mcp-server
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: github-mcp-server
-  template:
-    metadata:
-      labels:
-        app: github-mcp-server
-    spec:
-      containers:
-      - name: github-mcp-server
-        image: quay.io/eformat/github-mcp-server:latest
-        imagePullPolicy: Always
-        command: ["/usr/local/bin/start-server.sh"]
-        ports:
-        - containerPort: 8080
-        env:
-        - name: GITHUB_PERSONAL_ACCESS_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: github-credentials-v1
-              key: token
-        resources:
-          limits:
-            memory: "512Mi"
-          requests:
-            cpu: "200m"
-            memory: "256Mi"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: github-mcp-server
-spec:
-  selector:
-    app: github-mcp-server
-  ports:
-  - port: 80
-    targetPort: 8080
----
+{etx_agentic_ai_login}
+----
++
+.. We have a simple yaml resource file prepared for the GitHub MCP server deployment. You may also choose to copy paste the contents into the OpenShift console quick create UI (ensure the project is set to {etx_agentic_ai_username}-llama-stack)
+
+.. Deploy with the following command in your chosen terminal:
++
+[source,sh,options="wrap",role="execute",subs="attributes+"]
+----
+oc apply -f etx-agentic-ai-gitops/lab-resources/github-mcp -n {etx_agentic_ai_username}-llama-stack
 ----
 +
 
 . Replace the token placeholder `<YOUR_GITHUB_PERSONAL_ACCESS_TOKEN>` with your GitHub personal access token you had created earlier.
-
-. Hit `Create`.
 
 === **Add the GitHub tool provider to Llama Stack**
 
@@ -322,12 +274,12 @@ apis:
 models:
   - metadata: {}
     model_id: granite-3-2-8b-instruct
-    provider_id: vllm-granite-3-2-8b-instruct
+    provider_id: vllm
     provider_model_id: granite-3-2-8b-instruct
     model_type: llm
 providers:
   inference:
-  - provider_id: vllm-granite-3-2-8b-instruct
+  - provider_id: vllm
     provider_type: "remote::vllm"
     config:
       url: https://litellm-prod.apps.maas.redhatworkshops.io/v1
@@ -374,7 +326,7 @@ tool_groups:
 
 . Restart the playground by deleting its pod (starting with `llama-stack-playground`). Wait until it's Ready and Running.
 
-. Refresh the playground in the browser. Select the **Tools** playground with the **github** MCP tool provider and **Regular agent**. Try the prompt (replace the GitHub user with your user).
+. Refresh the playground in the browser. Select **Agent-based** with the **github** MCP tool provider. Try the prompt (replace the GitHub user with your user).
 +
 [source,bash,options="wrap",role="execute"]
 ----
@@ -384,7 +336,7 @@ List the branches of the ${YOUR_GITHUB_USER}/etx-agentic-ai-gitops repository.
 image::llama-playground-mcp-github-chat.png[LlamaStack MCP GitHub, 800]
 +
 
-. Experiment with different agents and prompts.
+. Experiment with prompts and perhaps multiple tools at a time.
 
 . Review the list of tools that can invoked via the github tool provider.
 
@@ -407,7 +359,7 @@ Do not add any optional parameters.
 +
 image::playground-github-issue.png[LlamaStack Playground Github issue prompt, 800]
 +
-
+NOTE: If it is unsuccessful, try refreshing the playground.
 .. Confirm that the issue has been created in your repo
 
 +

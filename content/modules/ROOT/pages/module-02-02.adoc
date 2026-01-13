@@ -7,9 +7,9 @@ So far, we've seen how we can query a given model within the Llama Stack Playgro
 
 For our use case, we'll need the following tools:
 
-* **read container logs**: fetch the logs of a given container, which contained the failing pipeline step,
-* **web search**: query a web search engine with a given search string and receive the content of matching web sites,
-* **create Github issue**: open a new issue within a given Github repository with a given issue description.
+* **Read container logs**: fetch the logs of a given container, which contained the failing pipeline step,
+* **Web search**: query a web search engine with a given search string and receive the content of matching web sites,
+* **Create Github issue**: open a new issue within a given Github repository with a given issue description.
 
 Llama Stack simplifies managing and providing tools for agentic use cases. There are three different ways to use tools in conjunction with Llama Stack:
 
@@ -26,24 +26,24 @@ As part of Red Hat AI, a Llama Stack instance is represented by the LlamaStackDi
 * **Server Configuration**: Which distribution to use (including built-in tools etc.)
 * **Container Specifications**: Port, environment variables, resource limits
 
-There is a unique instance of LlamaStack distribution deployed for each lab user.
+There is a unique instance of Llama Stack distribution deployed for each lab user.
 
-. Locate the LlamaStack distribution.
+. Locate the Llama Stack distribution.
 +
-image::llamastackdistribution-search.png[LlamaStack distribution, 800]
+image::llamastackdistribution-search.png[Llama Stack distribution, 800]
 +
 
 . Click on the existing distribution.
 +
-image::llamastackdistribution-current.png[LlamaStack distribution current, 800]
+image::llamastackdistribution-current.png[Llama Stack distribution current, 800]
 +
 
 . Click on the YAML tab
 +
-image::llamastackdistribution-tab.png[LlamaStack distribution tab, 800]
+image::llamastackdistribution-tab.png[Llama Stack distribution tab, 800]
 +
 
-. Review the LlamaStack Distribution we're using for this lab.
+. Review the Llama Stack Distribution we're using for this lab.
 
 [source,yaml]
 ----
@@ -91,7 +91,7 @@ Also listed is [3] the user configuration used with this distribution (ConfigMap
 
 The user config configmap can be used to store the `run.yaml` configuration for each Llama Stack distribution. Updates to the ConfigMap will restart the Pod to load the new data.
 
-Your current Llama Stack config should like the following. Refer to the https://llamastack.github.io/docs/distributions/customizing_run_yaml[Llama Stack documentation] for details and customization options.
+Your current Llama Stack config should like the following. Reference the ConfigMap resource in the UI or terminal, your preference. Refer to the https://llamastack.github.io/docs/distributions/customizing_run_yaml[Llama Stack documentation] for details and customization options.
 
 [source,yaml,options="wrap"]
 ----
@@ -113,12 +113,12 @@ data:
     models:
       - metadata: {}
         model_id: granite-3-2-8b-instruct
-        provider_id: vllm-granite-3-2-8b-instruct
+        provider_id: vllm
         provider_model_id: granite-3-2-8b-instruct
         model_type: llm
     providers:
       inference:
-      - provider_id: vllm-granite-3-2-8b-instruct
+      - provider_id: vllm
         provider_type: "remote::vllm"
         config:
           url: https://litellm-prod.apps.maas.redhatworkshops.io/v1
@@ -162,7 +162,7 @@ Let's now create our own Tavily key and update the Llama Stack distribution to u
 .Tavily API Key
 image::tavily-apikey.png[Create Tavily API Key, 600]
 
-. Create a new secret object using this specification while replacing the PLACEHOLDER with your Tavily key.
+. Create a new secret object using this specification while replacing the PLACEHOLDER with your Tavily key. Use the `+` icon in the UI or use your terminal to apply the new object.
 
 [source,yaml,options="wrap",role="execute",subs="attributes+"]
 ----
@@ -170,13 +170,13 @@ kind: Secret
 apiVersion: v1
 metadata:
   name: new-tavily-search-key
-  namespace: {YOUR_USER_NAME}-llama-stack
+  namespace: {etx_agentic_ai_username}-llama-stack
 stringData:
   tavily-search-api-key: {PLACEHOLDER}
 type: Opaque
 ----
 
-. Via CLI, now update the Llama Stack distribution to reference this new secret instead of the old one. Replace `tavily-search-key` with
+. Now, via CLI update the Llama Stack distribution to reference this new secret instead of the old one. You must do this with oc edit and you cannot update in the UI. Replace `tavily-search-key` with
 
 +
 [source,bash,options="wrap",role="execute"]
@@ -186,11 +186,11 @@ new-tavily-search-key
 
 .Updated Llama Stack Distribution
 image::llamastackdistribution-updated-key.png[Updated Llama Stack config, 600]
-NOTE: This will need to be done over cli with `oc edit` or `oc patch`, whichever is your preference.
+NOTE: This will need to be done over cli with `oc edit` or `oc patch`, whichever is your preference. Ensure you are within or specify the `{etx_agentic_ai_username}-llama-stack` namespace.
 
 . Let's now try out the websearch tool! Navigate back to the Llama Stack Playground UI.
 
-. In the left menu, choose `Tools`. Select the built-in `websearch` tool. We also need to specify what type of agent to call. Let's select the **Regular** agent to call the tool.
+. In the left menu, choose `Agent-based`. Then, select the built-in `websearch` tool. 
 
 +
 image::llamastack-playground-websearch.png[LlamaStack Playground with websearch, 800]
@@ -209,7 +209,7 @@ image::llamastack-playground-websearch-regular.png[LlamaStack Playground regular
 
 == Agent Types
 
-As you noticed, we can choose from 2 different types of agent in the Playground: Regular and ReAct.
+As you noticed, under the Agent-based selection you can see `Uses an agent (Regular or ReAct) with tools.` What is the difference?
 
 === Regular Agents
 
@@ -228,16 +228,7 @@ image::agent.png[Regular agent workflow, 600]
 
 === ReAct Agents
 
-. Now lets try out the **ReAct** agent to call the tool with the same prompt:
-+
-[source,bash,options="wrap",role="execute"]
-----
-What is the weather today in Brisbane?
-----
-+
-image::llamastack-playground-websearch-react.png[LlamaStack Websearch ReAct Agent, 800]
-
-Notice the new Thinking, Action, Observation steps that the agent performs? These steps are performed in order for each user prompt, and this sequence may be repeated if deemed necessary by the agent. This separation of **Re**asoning (Thinking) and **Act**ing is the hallmark of the **ReAct** strategy.
+. A **ReAct** agent will use Thinking, Action and Observation steps in its processing. These steps are performed in order for each user prompt, and this sequence may be repeated if deemed necessary by the agent. This separation of **Re**asoning (Thinking) and **Act**ing is the hallmark of the **ReAct** strategy.
 
 For a given user query, the ReAct workflow includes the following steps (see diagram):
 
