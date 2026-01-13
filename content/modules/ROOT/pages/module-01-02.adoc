@@ -9,7 +9,7 @@ Before starting this lab, ensure you have a **GitHub Account**, which allows you
 
 == Lab Setup
 
-You have access to a fully-featured **Red Hat AI** cluster, an AI platform running on OpenShift that comes with a number of tools for building, running, and managing AI workloads.
+You have access to a fully-featured **Red Hat AI** cluster (v2.25) an AI platform running on OpenShift that comes with a number of tools for building, running, and managing AI workloads.
 
 This Red Hat AI cluster instance is shared among all participants in this lab. Each participant has dedicated projects/namespaces in this cluster.
 
@@ -35,7 +35,7 @@ To get started, please log in with your user using both in the *Terminal* and th
 * Container Concepts: Understanding of containers and Kubernetes/OpenShift (helpful but not required)
 * Good grasp of https://openpracticelibrary.com/practice/gitops[GitOps,window=_blank] and https://openpracticelibrary.com/practice/everything-as-code[Everything as Code practices,window=_blank]
 
-xref:module-01-02.adoc[☕ Buckle Up], Here we go ...
+☕ Buckle Up, Here we go ...
 
 
 

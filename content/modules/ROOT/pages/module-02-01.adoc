@@ -5,32 +5,52 @@ include::vars.adoc[]
 
 In order to build and run our CI/CD agent, we'll need a number of components. Here is what is needed and what we'll use in our lab:
 
-* An **LLM** for analyzing the CI/CD pipeline logs and generating recommendations for troubleshooting. We'll leverage a Granite model that is hosted in a remote environment and that we're accessing through a Models-as-a-Service interface.
-* A **graphical user interface** for interactively querying the LLM and experimenting with user prompts and agentic capabilities. We'll use Llama Stack Playground, a frontend application designed for Llama Stack (see below).
-* An **agentic framework** for building out the agent as an application component. There's a wide variety of established frameworks. In our lab, we'll rely on the Llama Stack Python library.
+* An **LLM** for analyzing the CI/CD pipeline logs and generating recommendations for troubleshooting. We'll leverage a Llama model that is hosted in a remote environment and that we're accessing through a Models-as-a-Service interface.
+* A **Guardian Model** to provide a safety shield against harmful content for our model and agent interactions. We will leverage another Llama model that will also be hosted in the same remote environment via a MaaS infrastructure setup.
+* A **graphical user interface** for interactively querying the LLM and experimenting with user prompts and agentic capabilities. We'll use Llama Stack Playground, an open source, frontend application designed for Llama Stack (see below).
+* An **agentic framework** for building out the agent as an application component. There's a wide variety of established frameworks. In our lab, we'll rely on the Llama Stack agents API. 
 * Access to **third-party systems** depending on the use case:
 ** The CI/CD runtime, which contains the logs of the failed pipelines. In our lab, we'll leverage OpenShift Pipelines as the CI/CD engine. We can access the pipeline logs simply via the OpenShift interface.
 ** The internet for searching potential resolutions of the encountered pipelines failures.
-** The destination of the generated failure report. In our case, the agent will create issues within a specific Github repository and upload its reports there.
+** The destination of the generated failure report. In our case, the agent will create issues within a forked Github repository, that you manage, and upload its reports there.
 * In order to orchestrate the various interactions between the agent, the model, and the third-party systems, we'll rely on a central **API server** that is tailored for agentic use cases. This is where **Llama Stack** comes into play.
 
 In this chapter we will cover agent prototyping with Llama Stack. Specifically, we will
 
-1. use Llama Stack Playground for basic prompting against our model through Llama Stack,
-2. configure the built-in websearch tool in Llama Stack,
-3. set up integration with OpenShift and Github through MCP,
-4. build a prompt that covers the end-to-end use case.
+1. Use Llama Stack Playground for basic prompting against our model through Llama Stack,
+2. Configure the built-in websearch tool in Llama Stack,
+3. Set up integration with OpenShift and Github through MCP,
+4. Build a prompt that covers the end-to-end use case.
 
 
 == Llama Stack
 
 https://llama-stack.readthedocs.io/en/latest/[Llama Stack,window=_blank] is an open-source framework and API layer for building and running generative AI applications. It provides a unified set of APIs for inference, RAG, agents, tools, safety, evals, and telemetry. Llama Stack is one of the components included in Red Hat AI.
 
-There's a Llama Stack instance that's running in your lab environment. We will use this instance
+There's a Llama Stack instance that's running in your lab environment. We will use this instance:
 
-* from this showroom through the Llama Stack CLI client,
-* interactively from the Llama Stack Playground frontend,
-* programmatically from the IDE and agent service through the Llama Stack Python SDK. Note that--since Llama Stack implements the OpenAI API--any library that consumes the OpenAI API can be used as a client.
+* From this showroom through the Llama Stack CLI client
+* Interactively from the Llama Stack Playground frontend, running as a container on the cluster
+* And programmatically from the agent service through the Llama Stack Python SDK. Note that since Llama Stack implements the OpenAI API, any library that consumes the OpenAI API can be used as a client.
+
+=== A note about Red Hat AI 3.x
+
+This lab environment is built on Red Hat OpenShift AI 2.25. 
+
+In the 3.x release of Red Hat AI, we have a few key deployment differences:
+
+. Llama Stack is a tech preview feature configured as part of your DataScienceCluster resource and deployed with OpenShift AI.
+. The "playground" where you can test your various asset integrations is integrated into the OpenShift AI dashboard. We do not ship nor support the Llama Stack upstream playground image. 
+. 3.x has deprecated the inclusion and support of Llama Stack agents api in favor of the responses API. This is the biggest difference. See links for more information:
+.. https://docs.google.com/document/d/1IfOfdZ9FjU1fQdLTGso0Ikg-j2uL9XZXem4jbZQSq6w/edit?tab=t.0#heading=h.2bx3kla20plm[Product management FAQ]
+.. https://llamastack.github.io/docs/v0.3.4/building_applications/responses_vs_agents[Llama stack documentation comparing APIs]
+.. https://llamastack.github.io/docs/providers/openai_responses_limitations[Known responses API limitations]
+
+=== Why have we chosen to use the older Red Hat AI deployment and not 3.x for this lab experience?
+
+. We wanted to showcase implementing safety guardian models, which is not currently supported in 3.x, but was supported with 2.25.
+. The responses api has current limitations, and we do not have clean paths from product to follow for other agent framework integrations with Llama Stack. Therefore, it made more sense to showcase the Llama Stack Agents API implementation so that we could accomplish the complete workflow of an agentic deployment. 
+. It is not challenging to move to 3.x and to be able to apply the skills you will learn in this workshop with ease.
 
 === Using the Llama Stack CLI
 
@@ -46,7 +66,7 @@ For the endpoint of the Llama Stack distribution server enter:
 +
 [source,bash,options="wrap",role="execute",subs="attributes+"]
 ----
-http://{YOUR_USER_NAME}-llama-stack-service.{YOUR_USER_NAME}-llama-stack.svc.cluster.local:8321
+http://{etx_agentic_ai_username}-llama-stack-service.{etx_agentic_ai_username}-llama-stack.svc.cluster.local:8321
 ----
 +
 When prompted for the API key, leave the value empty and hit enter.
@@ -118,7 +138,7 @@ Total models: 1
 
 === Playground: Llama Stack User Interface
 
-Llama Stack comes with a simple UI called Playground. For this lab, a Playground instance is already deployed for each user within the `userx-llama-stack` namespace. Substitute `x` for your individual user number.
+Llama Stack comes with a simple UI called Playground. For this lab, a Playground instance is already deployed for each user within the `{etx_agentic_ai_username}-llama-stack` namespace.
 
 Select the *{etx_agentic_ai_username}-llama-stack* namespace.
 
@@ -132,7 +152,7 @@ image::llamastack-playground-pod.png[Llama Stack Playground Pod, 800]
 image::llamastack-playground-route.png[Llama Stack Playground Route, 800]
 +
 
-. Here is the Playground, GUI for interacting with Llama Stack services.
+. Here is the Playground GUI for interacting with Llama Stack services.
 +
 image::llama-stack-playground2.png[Llama Stack Playground UI, 800]
 
