@@ -10,3 +10,5 @@
 * 4. Hardening, Observability, Promotion
 ** xref:module-04-01.adoc[4.1 Introduction to Observability]
 ** xref:module-04-02.adoc[4.2 Llama Stack Observability]
+* 5. Conclusion
+** xref:module-closing.adoc[Wrap Up]
