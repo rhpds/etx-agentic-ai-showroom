@@ -36,10 +36,6 @@ Overall, the system works as a GitOps remediation / failure triage agent:
 * Searches for solutions via web search
 * Creates GitHub issues with error summaries and solutions
 
-// changes to file including your github user id, username
-
-. Git commit and push changes to your fork.
-
 == Trigger pipeline to build the agent image
 
 . In your chosen terminal environment, create a PipelineRun using the following command:
@@ -116,7 +112,7 @@ oc -n user{your-user-number}-ai-agent get routes
 
 or in the UI:
 
-image::../assets/images/argo-route.png[]
+image::argo-route.png[]
 
 . Verify health of app and associated agent pod running
 
