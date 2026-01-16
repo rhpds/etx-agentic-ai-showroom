@@ -9,25 +9,9 @@ include::vars.adoc[]
 You will build an agent, and manage it through ArgoCD. You will then create a pipeline to trigger the agent to create a GitHub issue in your forked repository from previous modules.
 ====
 
-== Git clone repository locally
-
-In your own environment, or in your showroom terminal if preferred:
-
-. Authenticate to the cluster with your user credentials.
-. Clone your previously created repository fork:
-+
-[source,bash,options="wrap",role="execute"]
-----
-cd ${DESIRED_DIRECTORY_LOCATION}
-git clone https://github.com/[YOUR-GITHUB-ID]/etx-agentic-ai-gitops.git
-cd etx-agentic-ai-gitops
-----
-+
-. Authenticate to github, if not already, using a personal access token (separate from the one previously created in the workshop) with at least `Read and Write` permission to `Contents` of the above repository.
-
 == Load the Agent files
 
-. In your local preferred environment, or within the workbench image IDE, open `agent/code/agent.py` and view the contents of the agent application. This file contains the core logic. Ensure you understand how it works. Then view the `agent/code/main.py` file to understand how the agent is triggered.
+. In your preferred terminal environment, open `agent/code/agent.py` from your forked repository and view the contents of the agent application. This file contains the core logic. Ensure you understand how it works. Then view the `agent/code/main.py` file to understand how the agent is triggered.
 
 Overall, the system works as a GitOps remediation / failure triage agent:
 
@@ -44,7 +28,7 @@ NOTE: Edit the file in the below command with the appropriate variables. Then, e
 
 [source,bash,options="wrap",role="execute",subs="attributes+"]
 ----
-oc -n {etx_agentic_ai_username}-ai-agent create -f etx-agentic-ai-gitops/lab-resources/agent-service-build-run
+oc -n {etx_agentic_ai_username}-ai-agent create -f etx-agentic-ai-gitops/lab-resources/agent-service-build-run.yaml
 ----
 
 . View the pipelinerun status either in the UI or by command:
@@ -58,6 +42,8 @@ oc -n {etx_agentic_ai_username}-ai-agent get pipelineruns -w
 ----
 
 == Deploy the agent with ArgoCD
+
+Now we will create a new Argo app that pulls the agent helm chart from your forked repository in GitHub.
 
 . In your chosen terminal, with your preferred editor, edit the `values.yaml` file found in `etx-agentic-ai-gitops/agent/chart/`
 
@@ -87,13 +73,15 @@ agentConfig:
   githubOwner: "github_username"
 ----
 
-. Edit the variables within the `etx-agentic-ai-gitops/lab-resources/ai-agent-app file. For namespace set `{etx_agentic_ai_username}-ai-agent` and for GitHub repository set your forked repo location.
+. Commit your `values.yaml` file changes to your fork. 
+
+. Edit the variables within the `etx-agentic-ai-gitops/lab-resources/ai-agent-app.yaml file. For namespace set `{etx_agentic_ai_username}-ai-agent` and for GitHub repository set your forked repo location.
 
 . Create a new argo application from your command line with the following command (you may choose to create the app via the UI as well if you prefer).
 +
 [source,bash,options="wrap",role="execute"]
 ----
-oc apply -f etx-agentic-ai-gitops/lab-resources/ai-agent-app
+oc apply -f etx-agentic-ai-gitops/lab-resources/ai-agent-app.yaml
 ----
 
 === Check on application with CLI or ArgoCD UI
@@ -136,18 +124,18 @@ Using your terminal or the (+) button in the web console, apply the following pi
 
 [source,yaml,options="wrap",role="execute"]
 ----
-oc apply -f etx-agentic-ai-gitops/lab-resources/demo-pipeline
+oc apply -f etx-agentic-ai-gitops/lab-resources/demo-pipeline.yaml
 ----
 
 === Trigger the pipeline
 
-Since the pipeline is configured to fail by default (using `GIT_REVISION: bad`), you can trigger it with minimal parameters. Only `NAMESPACE` is required since it has no default.
+. Edit the `lab-resources/demo-pipeline-run.yaml` file, substituting your user number where applicable in the file.
 
 . Create the PipelineRun:
 +
 [source,bash,options="wrap",role="execute"]
 ----
-oc -n {etx_agentic_ai_username}-ai-agent create -f etx-agentic-ai-gitops/lab-resources/demo-pipeline-run
+oc -n {etx_agentic_ai_username}-ai-agent create -f etx-agentic-ai-gitops/lab-resources/demo-pipeline-run.yaml
 ----
 
 . Monitor the PipelineRun:

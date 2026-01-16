@@ -243,13 +243,13 @@ oc apply -f etx-agentic-ai-gitops/lab-resources/github-mcp.yaml -n {etx_agentic_
 ----
 +
 
-. If you deployed locally, revert your file edit and delete the token from your file to avoid any accidental token commits to GitHub! 
+. **If you deployed locally** with the above command, revert your file edit and delete the token from your file to avoid any accidental token commits to GitHub. You will push changes in the next module.
 
 === **Add the GitHub tool provider to Llama Stack**
 
 As in the previous section, we'll reference the GitHub MCP server in the Llama Stack configuration.
 
-. Edit the LlamaStack ConfigMap `llama-stack-config`.
+. Edit the Llama Stack ConfigMap `llama-stack-config`.
 
 . Add the following entry under `tool_groups` and save your changes. Note that we don't have to edit the tool runtime section since we already added the MCP runtime entry previously.
 
