@@ -213,7 +213,7 @@ image::github-repo-perms.png[GitHub Repo Perms, 400]
 +
 [TIP]
 ====
-Save the token for easy access as you'll need to use it later in the lab.
+Save the token for easy access as you'll need to use it in a moment.
 ====
 +
 
@@ -228,17 +228,22 @@ Save the token for easy access as you'll need to use it later in the lab.
 {etx_agentic_ai_login}
 ----
 +
-.. We have a simple yaml resource file prepared for the GitHub MCP server deployment. You may also choose to copy paste the contents into the OpenShift console quick create UI (ensure the project is set to {etx_agentic_ai_username}-llama-stack)
+.. We have a yaml resource file prepared for the GitHub MCP server deployment. Review the file contents in your preferred editor at `etx-agentic-ai-gitops/lab-resources/github-mcp.yaml` path in your cloned repository. 
 
-.. Deploy with the following command in your chosen terminal:
+.. Note the following resources created for the GitHub MCP server: a **secret** containing your GitHub credentials, a **deployment**, and a **service**.
+
+.. Replace the token placeholder `<YOUR_GITHUB_PERSONAL_ACCESS_TOKEN>` in the **secret** with your GitHub personal access token you had created earlier. Save the file.
+
+. Deploy with the following command in your chosen terminal.
+You may also choose to copy paste the contents into the OpenShift console quick create UI (ensure the project is set to {etx_agentic_ai_username}-llama-stack):
 +
 [source,sh,options="wrap",role="execute",subs="attributes+"]
 ----
-oc apply -f etx-agentic-ai-gitops/lab-resources/github-mcp -n {etx_agentic_ai_username}-llama-stack
+oc apply -f etx-agentic-ai-gitops/lab-resources/github-mcp.yaml -n {etx_agentic_ai_username}-llama-stack
 ----
 +
 
-. Replace the token placeholder `<YOUR_GITHUB_PERSONAL_ACCESS_TOKEN>` with your GitHub personal access token you had created earlier.
+. If you deployed locally, revert your file edit and delete the token from your file to avoid any accidental token commits to GitHub! 
 
 === **Add the GitHub tool provider to Llama Stack**
 

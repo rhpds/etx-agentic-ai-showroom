@@ -197,7 +197,7 @@ See below for placement reference:
 .Updated Llama Stack Distribution
 image::llamastackdistribution-updated-key.png[Updated Llama Stack config, 600]
 +
-. Delete Llama Stack playground pod in the {etx_agentic_ai_username}-llama-stack namespace to restart it.
+. Restart the playground by deleting its pod (starting with `llama-stack-playground`) in the {etx_agentic_ai_username}-llama-stack namespace. Wait until it's Ready and Running. 
 
 === Test Websearch integration
 . Let's now try out the websearch tool! Navigate back to the Llama Stack Playground UI.
