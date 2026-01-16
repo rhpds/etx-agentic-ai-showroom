@@ -45,8 +45,8 @@ Llama Stack provides built-in support for safety guardrails through its safety A
 
 The model is already set up within the deployment, we just need to add in the safety and shields sections.
 
-Add the following code block in the run.yaml section of the ConfigMap, in the `providers` section:
-
+.. Add the following code block in the run.yaml section of the ConfigMap, in the `providers` section:
++
 [source,yaml,options="wrap",role="execute"]
 ----
 safety:
@@ -56,28 +56,28 @@ safety:
     excluded_categories: []
     model: vllm-safety/Llama-Guard-3-1B
 ----
-
-Then, below the providers section, add in the shields:
-
++
+.. Then, below the providers section, add in the shields:
++
 [source,yaml,options="wrap",role="execute"]
 ----
 shields:
  - shield_id: vllm-safety/Llama-Guard-3-1B
    model_id: vllm-safety/Llama-Guard-3-1B
 ----
-
++
 The section you've just added should match the following:
-
++
 image::safety-sheilds-config.png[]
-
-As the last step, we need to register the shields in our showroom terminal (you may also use your own local terminal if you've installed the llama-stack-client there and are authenticated appropriately):
-
++
+.. As the last step, we need to register the shields in our showroom terminal (you may also use your own local terminal if you've installed the llama-stack-client there and are authenticated appropriately):
++
 [source,yaml,options="wrap",role="execute"]
 ----
 llama-stack-client shields register --shield-id vllm-safety/Llama-Guard-3-1B
 ----
-
-Now list the available shields to confirm it was registered appropriately:
++
+.. Now, list the available shields to confirm it was registered appropriately:
 
 [source,yaml,options="wrap",role="execute"]
 ----
@@ -86,19 +86,21 @@ llama-stack-client shields list
 
 image::lsc-register-shields.png[]
 
-=== Test Guardrail functionality in the Llama Stack playground. 
+== Test Guardrail functionality in the Llama Stack playground. 
 
 1. Go back to the playground interface
 
-2. Select `Agent-based`
+2. Select `vllm/granite` as your chat model. 
 
-3. Add the Llama Guard model to the Input and Output sheild form sections:
-+
+3. Select `Agent-based`
+
+4. Add the Llama Guard model to the Input and Output sheild form sections:
+
 image::input-shield.png[]
-+
+
 image::input-output-sheilds.png[]
-+
-**Input Shields**
+
+=== Input Shields
 
 Input shields protect your AI system by screening incoming user requests before they reach the model. They act as gatekeepers that detect and block:
 
@@ -106,7 +108,7 @@ Input shields protect your AI system by screening incoming user requests before 
 * Inappropriate or harmful content in user queries
 * Attempts to extract sensitive information or override system instructions
 
-**Output Shields**
+=== Output Shields
 
 Output shields protect users (and your organization) by filtering the model's responses before they're delivered. They prevent the AI from:
 
@@ -114,7 +116,7 @@ Output shields protect users (and your organization) by filtering the model's re
 * Leaking sensitive information (PII, credentials, etc.)
 * Making inappropriate commitments or statements
 
-**Why Use Both?**
+=== Why Use Both?
 
 Defense-in-depth. Input shields alone can't catch everything because:
 
@@ -130,8 +132,9 @@ Output shields alone are insufficient because:
 
 Together, input and output shields create a safety envelope around your AI agent, ensuring both requests and responses meet your security and safety standards.
 
-+
-4. Test functionality by typing something or asking something harmful in the chat interface. Observe the model's behavior. Try a few different things and s
+=== Test guard model functionality in chat
+
+Test functionality of the Llama Guard model by typing something or asking something harmful in the chat interface. Observe the model's behavior.
 
 == Summary
 
