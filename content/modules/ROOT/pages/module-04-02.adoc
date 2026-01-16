@@ -40,8 +40,8 @@ Llama Stack has built-in OpenTelemetry support through its meta-reference teleme
 
 When telemetry is enabled, Llama Stack automatically creates spans for each inference request and emits token usage metrics. Each request generates:
 
-* Traces: Distributed traces showing the inference request flow with timing data
-* Metrics: Token counters (llama_stack_prompt_tokens_total, llama_stack_completion_tokens_total, llama_stack_tokens_total) labeled by model_id and provider_id
+* **Traces**: Distributed traces showing the inference request flow with timing data
+* **Metrics**: Token counters (llama_stack_prompt_tokens_total, llama_stack_completion_tokens_total, llama_stack_tokens_total) labeled by model_id and provider_id
 
 The telemetry configuration in Llama Stack includes the following variables:
 
@@ -86,9 +86,9 @@ providers:
 We will focus on distributed tracing for our Llama Stack telemetry configuration. We are not hosting the model ourselves, so we will not visualize those metrics, however that could be a natural extension of our workshop if you run through these steps with your own model deployment.
 
 . Navigate to `Observe`-> `Traces` in the OpenShift web console navigation bar:
-
++
 image::navigate-to-traces.png[]
-
++
 . In the Tempo UI plugin, select the tempo instance from the drop-down:
 
 image::tempo-instance-select.png[]
@@ -185,36 +185,36 @@ image::download-trace.png[]
 
 Armed with trace data, ask the following questions:
 
-. What was your intent in this agent turn, and did the agent interpret it correctly?
+. **What was your intent in this agent turn, and did the agent interpret it correctly?**
 .. Look at your user message in the agent turn request. Did the agent choose the correct toolgroup and tool for your intent?
 
-. Which step took the longest: tool selection inference, tool execution, or final response inference?
+. **Which step took the longest: tool selection inference, tool execution, or final response inference?**
 .. Compare the durations of the inference spans vs the tool_execution span.
 
-. What dominates overall time: tools, inference, or overhead?
+. **What dominates overall time: tools, inference, or overhead?**
 .. Can anything be streamlined?
 
-. Is the slowest step variable across traces or consistently the same component?
+. **Is the slowest step variable across traces or consistently the same component?**
 
-. Is latency primarily due to remote inference over network, or due to the model itself?
+. **Is latency primarily due to remote inference over network, or due to the model itself?**
 .. Look for any evidence: short tool execution but long inference; any signs of retries/timeouts.
 
-. Are we exporting sensitive/high-volume payloads into traces?
+. **Are we exporting sensitive/high-volume payloads into traces?**
 .. In our example, you can see pretty extensive pod and networking data dumped into the trace:
 +
 image::too-much-pod-data.png[]
 +
 .. Think of some ways this potential security risk could be mitigated in future implementations.
 
-. Is tool output being reinjected verbatim?
+. **Is tool output being reinjected verbatim?**
 .. Clue: In inference.input, in our example from above, the pod data was injected in its entirety. This is a classic driver of prompt token inflation. See where this might be happening in your example.
 
-. Are tools being invoked in the optimal order, or is the agent serializing work that could be parallelized to reduce end-to-end latency?
+. **Are tools being invoked in the optimal order, or is the agent serializing work that could be parallelized to reduce end-to-end latency?**
 .. Which tool calls are independent vs dependent?
 
-. Is this trace safe to store?
+. **Is this trace safe to store?**
 
-. Across the agent turn, how many tokens were consumed in each inference step (tool-selection vs final response), and what changes would you make (if any) to reduce the count?
+. **Across the agent turn, how many tokens were consumed in each inference step (tool-selection vs final response), and what changes would you make (if any) to reduce the count?**
 .. sum the total_tokens per inference span and compare prompt vs completion tokens.
 .. **What this is NOT including**: These trace token metrics reflect what Llama Stack observed for its own inference calls, but may exclude provider-side additions (proxy/gateway prompt rewriting, hidden system/safety wrappers), any unreported usage fields, and all non-LLM costs (tool payload size, network, retries).
 .. For the full picture, you also need to track **model metrics**. Provider/model usage is the closest thing to billing truth. Trace tokens give step-by-step attribution (which part of the agent turn caused the spend, and therefore what can I optimize). In production, use provider metrics for cost + traces for diagnosis/optimization.
