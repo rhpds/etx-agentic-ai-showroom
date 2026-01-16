@@ -8,7 +8,7 @@
 * 3. From Prototype to App
 ** xref:module-03.adoc[3.1 From Prototype to App]
 * 4. Hardening, Observability, Promotion
-** xref:module-04-01.adoc[4.1 Introduction to Observability]
-** xref:module-04-02.adoc[4.2 Llama Stack Observability]
+** xref:module-04-01.adoc[4.1 Adding Guardrails]
+** xref:module-04-02.adoc[4.2 Agentic System Observability]
 * 5. Conclusion
 ** xref:module-closing.adoc[Wrap Up]
