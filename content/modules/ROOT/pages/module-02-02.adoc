@@ -163,7 +163,7 @@ Let's now create our own Tavily key and update the Llama Stack distribution to u
 image::tavily-apikey.png[Create Tavily API Key, 600]
 
 . Create a new secret object using this specification while replacing the PLACEHOLDER with your Tavily key. Use the `+` icon in the UI or use your terminal to apply the new object.
-
++
 [source,yaml,options="wrap",role="execute",subs="attributes+"]
 ----
 kind: Secret
@@ -175,19 +175,31 @@ stringData:
   tavily-search-api-key: {PLACEHOLDER}
 type: Opaque
 ----
-
-. Now, via CLI update the Llama Stack distribution to reference this new secret instead of the old one. You must do this with oc edit and you cannot update in the UI. Replace `tavily-search-key` with
-
++
+. Now, via CLI update the Llama Stack distribution to reference this new secret instead of the old one. You must do this with `oc edit` or `oc patch` and you cannot update in the UI. 
++
+Edit command to open local editor:
++
+[source,bash,options="wrap",role="execute",subs="attributes+"]
+----
+oc edit llamastackdistribution/{etx_agentic_ai_username}-llama-stack -n {etx_agentic_ai_username}-llama-stack
+----
++
+Replace `tavily-search-key` with:
 +
 [source,bash,options="wrap",role="execute"]
 ----
 new-tavily-search-key
 ----
-
++
+See below for placement reference:
++
 .Updated Llama Stack Distribution
 image::llamastackdistribution-updated-key.png[Updated Llama Stack config, 600]
-NOTE: This will need to be done over cli with `oc edit` or `oc patch`, whichever is your preference. Ensure you are within or specify the `{etx_agentic_ai_username}-llama-stack` namespace.
++
+. Delete Llama Stack playground pod in the {etx_agentic_ai_username}-llama-stack namespace to restart it.
 
+=== Test Websearch integration
 . Let's now try out the websearch tool! Navigate back to the Llama Stack Playground UI.
 
 . In the left menu, choose `Agent-based`. Then, select the built-in `websearch` tool. 
