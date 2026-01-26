@@ -54,7 +54,7 @@ safety:
   provider_type: inline::llama-guard
   config:
     excluded_categories: []
-    model: vllm-safety/Llama-Guard-3-1B
+    model: vllm/Llama-Guard-3-1B
 ----
 +
 .. Then, below the providers section, add in the shields:
@@ -62,8 +62,8 @@ safety:
 [source,yaml,options="wrap",role="execute"]
 ----
 shields:
- - shield_id: vllm-safety/Llama-Guard-3-1B
-   model_id: vllm-safety/Llama-Guard-3-1B
+ - shield_id: vllm/Llama-Guard-3-1B
+   model_id: vllm/Llama-Guard-3-1B
 ----
 +
 The section you've just added should match the following:
@@ -74,7 +74,7 @@ image::safety-sheilds-config.png[]
 +
 [source,yaml,options="wrap",role="execute"]
 ----
-llama-stack-client shields register --shield-id vllm-safety/Llama-Guard-3-1B
+llama-stack-client shields register --shield-id vllm/Llama-Guard-3-1B
 ----
 +
 .. Now, list the available shields to confirm it was registered appropriately:
