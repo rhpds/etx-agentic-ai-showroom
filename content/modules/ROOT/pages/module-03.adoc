@@ -84,7 +84,7 @@ Now we will create a new Argo app that pulls the agent helm chart from your fork
 vim etx-agentic-ai-gitops/agent/chart/values.yaml
 ----
 +
-. Replace the values for [YOUR_USER_NUMBER] and [YOUR_GITHUB_USERNAME] as we've done in the example below:
+. Replace the values for your OpenShift username and your GitHub user handle as we've done in the example below:
 +
 [source,yaml,options="wrap",role="execute"]
 ----
@@ -100,14 +100,14 @@ agentConfig:
   maxTokens: "5000"
   modelId: "granite-3-2-8b-instruct"
   temperature: "0.0"
-  githubOwner: "github_username"
+  githubOwner: "taylorjordanNC"
 ----
 +
 . Commit your `values.yaml` file changes to your fork. 
 
 . Edit the variables within the `etx-agentic-ai-gitops/lab-resources/ai-agent-app.yaml file. For namespace set `{etx_agentic_ai_username}-ai-agent` and for GitHub repository set your forked repo location.
 
-. Create a new argo application from your command line with the following command (you may choose to create the app via the UI as well if you prefer).
+. Create a new argo application from your command line with the following command (you may choose to create the app via the UI as well if you prefer). **Do not forget** to edit the variables in the file before deploying.
 +
 [source,bash,options="wrap",role="execute"]
 ----
@@ -152,7 +152,9 @@ Let's test the agent!
 
 === Apply the pipeline resource
 
-Using your terminal or the (+) button in the web console, apply the following pipeline resource with your user number substituted into the metadata/namespace placeholder (you will need to edit the file directly):
+Using your terminal or the (+) button in the web console, apply the following pipeline resource with your user number substituted into the metadata/namespace placeholder:
+
+IMPORTANT: You will need to edit the file directly. Don't forget!
 
 [source,yaml,options="wrap",role="execute"]
 ----
