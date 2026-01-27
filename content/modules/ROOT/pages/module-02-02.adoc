@@ -116,6 +116,11 @@ data:
         provider_id: vllm
         provider_model_id: granite-3-2-8b-instruct
         model_type: llm
+      - metadata: {}
+        model_id: Llama-Guard-3-1B
+        provider_id: vllm
+        provider_model_id: Llama-Guard-3-1B
+        model_type: llm
     providers:
       inference:
       - provider_id: vllm
