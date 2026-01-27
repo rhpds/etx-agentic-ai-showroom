@@ -125,7 +125,7 @@ tool_groups:
 ----
 ====
 
-. Hit `Save`. The Llama Stack operator restarts Llama Stack since its configuration changed.
+. Hit `Save`. The Llama Stack operator restarts Llama Stack since its configuration changed. This may take several minutes.
 
 . Restart the playground by deleting its pod (starting with `llama-stack-playground`). Wait until it's Ready and Running.
 
